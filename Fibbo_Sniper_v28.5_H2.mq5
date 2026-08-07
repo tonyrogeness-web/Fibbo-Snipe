@@ -593,7 +593,7 @@ input group "=== FILTROS ADICIONAIS ==="
 input bool InpUseADX = true;
 input int InpADX_Period = 14; 
 input bool InpUseFechamentoMoeda = true;
-input double InpPerdaMaximaGlobalPct = 2.0, InpPerdaMaximaMoedaPct = 2.0, InpLucroAlvoMoedaPct = 1.5; // [SWEET SPOT] Meta 1.5%/dia (+$150 USD), Trava 2.0%/dia (-$200 USD em 10k)
+input double InpPerdaMaximaGlobalPct = 1.5, InpPerdaMaximaMoedaPct = 1.5, InpLucroAlvoMoedaPct = 1.0; // [RECOMENDADO CONSERVADOR] Meta 1.0%/dia (+$100 USD), Trava 1.5%/dia (-$150 USD em 10k)
 
 input group "=== FIBONACCI ==="
 input bool InpUseFiboPullback = true;
