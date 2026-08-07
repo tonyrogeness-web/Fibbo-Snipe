@@ -1611,33 +1611,21 @@ void DrawVisualText(string name, datetime t, double price, string text, color cl
    ObjectSetInteger(0, on, OBJPROP_COLOR, clr);
 }
 
-void DrawVisualLine(string name, double price, color clr, string sym, string tip, int style=STYLE_DASH, int width=1, bool show=true, bool highlight=false) {
+void DrawVisualLine(string name, double price, color clr, string sym, string tip, int style=STYLE_DOT, int width=1, bool show=true, bool highlight=false) {
    string oh = "SniperLine_"+name, ot = "SniperText_"+name;
    if(price <= 0 || !show || g_LinhasModo == 2) { ObjectDelete(0,oh); ObjectDelete(0,ot); return; }
    datetime ta = iTime(_Symbol,g_TF_L1,0) + (datetime)(PeriodSeconds(g_TF_L1)*5);
    
-   // Tonalidades suavizadas e elegantes para manter o gráfico discreto e sem ofuscar a visão
+   // Cores discretas mantidas sem alterações estridentes
    color line_clr = clr;
    color txt_clr  = clr;
-   if(highlight) {
-      if(name == "FR_Topo" || name == "FR_Fundo") {
-         line_clr = C'210,65,65';   // Vermelho Suave Elegante
-         txt_clr  = C'210,65,65';   
-      } else if(name == "Fibo_Venda" || name == "Fibo_Compra") {
-         line_clr = C'210,165,30';  // Dourado Suave Elegante
-         txt_clr  = C'210,165,30';  
-      } else if(StringFind(name, "Canal") >= 0) {
-         line_clr = C'40,180,110';   // Verde Suave Elegante
-         txt_clr  = C'40,180,110';   
-      } else {
-         line_clr = C'220,220,220';
-         txt_clr  = C'220,220,220';
-      }
-   }
-   int font_sz = 12; // Fonte 12pt discreta e fina
+   int font_sz = 12;
+
+   // Se estiver pronta/armada (highlight=true) fica contínua (STYLE_SOLID); caso contrário, pontilhada (STYLE_DOT)
+   int line_style = highlight ? STYLE_SOLID : STYLE_DOT;
 
    if(ObjectFind(0,oh) < 0) { ObjectCreate(0,oh,OBJ_HLINE,0,0,price); ObjectSetInteger(0,oh,OBJPROP_BACK,true); ObjectSetInteger(0,oh,OBJPROP_SELECTABLE,false); ObjectSetInteger(0,oh,OBJPROP_HIDDEN,true); }
-   ObjectSetDouble(0,oh,OBJPROP_PRICE,price); ObjectSetInteger(0,oh,OBJPROP_COLOR,line_clr); ObjectSetInteger(0,oh,OBJPROP_STYLE,style); ObjectSetInteger(0,oh,OBJPROP_WIDTH,width); ObjectSetString(0,oh,OBJPROP_TOOLTIP,tip);
+   ObjectSetDouble(0,oh,OBJPROP_PRICE,price); ObjectSetInteger(0,oh,OBJPROP_COLOR,line_clr); ObjectSetInteger(0,oh,OBJPROP_STYLE,line_style); ObjectSetInteger(0,oh,OBJPROP_WIDTH,width); ObjectSetString(0,oh,OBJPROP_TOOLTIP,tip);
    
    if(ObjectFind(0,ot) < 0) { ObjectCreate(0,ot,OBJ_TEXT,0,ta,price); ObjectSetString(0,ot,OBJPROP_FONT,"Arial"); ObjectSetInteger(0,ot,OBJPROP_BACK,false); ObjectSetInteger(0,ot,OBJPROP_SELECTABLE,false); ObjectSetInteger(0,ot,OBJPROP_HIDDEN,true); }
    ObjectSetInteger(0,ot,OBJPROP_FONTSIZE,font_sz);
@@ -1651,27 +1639,40 @@ void DesenharLinhasChart() {
    color cor_h = C'28,85,58', cor_l = C'28,85,58'; string sym_h = is_lateral ? "▼" : "▲", sym_l = is_lateral ? "▲" : "▼";
    double ask = SymbolInfoDouble(_Symbol,SYMBOL_ASK), bid = SymbolInfoDouble(_Symbol,SYMBOL_BID); double zone_pts = (g_CachedATR > 0) ? (g_CachedATR / _Point) * 2.0 : 0;
    
-   // Quando o modo ZEN estiver ativado (g_ViewZonas == true), as linhas normais somem para dar lugar exclusivo à análise ZEN (evita poluição e sobreposição)
+   // Quando o modo ZEN estiver ativado (g_ViewZonas == true), as linhas normais somem para dar lugar exclusivo à análise ZEN
    bool draw_lines = (!g_ViewZonas && g_LinhasModo != 2);
    
-   bool fr_show_top=false, fr_show_bot=false;
-   if(draw_lines) {
-      if(g_LinhasModo==0 && g_ViewFR) { fr_show_top=true; fr_show_bot=true; } else if(g_LinhasModo==1 && g_ViewFR) { double dist_top=MathAbs(g_CachedFRTop-ask)/_Point, dist_bot=MathAbs(bid-g_CachedFRFundo)/_Point; if(g_ReadyFR||dist_top<=zone_pts) fr_show_top=true; if(g_ReadyFR||dist_bot<=zone_pts) fr_show_bot=true; }
-   }
+   bool fr_show_top = (draw_lines && g_ViewFR);
+   bool fr_show_bot = (draw_lines && g_ViewFR);
    bool fr_top_hl = (g_ReadyFR || (MathAbs(g_CachedFRTop-ask)/_Point <= zone_pts));
    bool fr_bot_hl = (g_ReadyFR || (MathAbs(bid-g_CachedFRFundo)/_Point <= zone_pts));
-   if(InpUseFR && g_CachedFRTop > 0) { DrawVisualLine("FR_Topo",  g_CachedFRTop,   C'100,35,35', "▼", "[FR] Topo",  STYLE_SOLID, 1, fr_show_top, fr_top_hl); DrawVisualLine("FR_Fundo", g_CachedFRFundo, C'100,35,35', "▲", "[FR] Fundo", STYLE_SOLID, 1, fr_show_bot, fr_bot_hl); } else { DrawVisualLine("FR_Topo",  0, clrNONE, "", ""); DrawVisualLine("FR_Fundo", 0, clrNONE, "", ""); }
+   if(InpUseFR && g_CachedFRTop > 0) {
+      DrawVisualLine("FR_Topo",  g_CachedFRTop,   C'120,45,45', "▼", "[FR] Topo",  fr_top_hl ? STYLE_SOLID : STYLE_DOT, 1, fr_show_top, fr_top_hl);
+      DrawVisualLine("FR_Fundo", g_CachedFRFundo, C'120,45,45', "▲", "[FR] Fundo", fr_bot_hl ? STYLE_SOLID : STYLE_DOT, 1, fr_show_bot, fr_bot_hl);
+   } else {
+      DrawVisualLine("FR_Topo",  0, clrNONE, "", "");
+      DrawVisualLine("FR_Fundo", 0, clrNONE, "", "");
+   }
 
-   bool fb_show_sell=false, fb_show_buy=false; double nSell=0, nBuy=0, nSell2=0, nBuy2=0;
+   bool fb_show_sell = (draw_lines && g_ViewFibo);
+   bool fb_show_buy  = (draw_lines && g_ViewFibo);
+   double nSell=0, nBuy=0, nSell2=0, nBuy2=0;
    if(InpUseFiboPullback && g_CachedFiboH > 0) {
-      double range = g_CachedFiboH - g_CachedFiboLow; if(range >= (g_CachedFiboATR * InpFibMinRange_ATR_Multi)) { nSell = g_CachedFiboH - range * (InpFibLevelSell / 100.0); nBuy = g_CachedFiboLow + range * (InpFibLevelBuy / 100.0); nSell2 = g_CachedFiboH - range * (InpFibLevel2Sell / 100.0); nBuy2 = g_CachedFiboLow + range * (InpFibLevel2Buy / 100.0); }
-      if(draw_lines) {
-         if(g_LinhasModo==0 && g_ViewFibo) { fb_show_sell=true; fb_show_buy=true; } else if(g_LinhasModo==1 && g_ViewFibo) { bool dir_sell=(is_lateral||t_dir==-1), dir_buy=(is_lateral||t_dir==1); double dist_sell=MathAbs(nSell-ask)/_Point, dist_buy=MathAbs(bid-nBuy)/_Point; if(dir_sell&&(g_ReadyFibo||dist_sell<=zone_pts)) fb_show_sell=true; if(dir_buy &&(g_ReadyFibo||dist_buy <=zone_pts)) fb_show_buy=true; }
+      double range = g_CachedFiboH - g_CachedFiboLow;
+      if(range >= (g_CachedFiboATR * InpFibMinRange_ATR_Multi)) {
+         nSell = g_CachedFiboH - range * (InpFibLevelSell / 100.0);
+         nBuy  = g_CachedFiboLow + range * (InpFibLevelBuy / 100.0);
+         nSell2 = g_CachedFiboH - range * (InpFibLevel2Sell / 100.0);
+         nBuy2  = g_CachedFiboLow + range * (InpFibLevel2Buy / 100.0);
       }
       bool fb_sell_hl = (g_ReadyFibo || (MathAbs(nSell-ask)/_Point <= zone_pts));
       bool fb_buy_hl  = (g_ReadyFibo || (MathAbs(bid-nBuy)/_Point <= zone_pts));
-      DrawVisualLine("Fibo_Venda",  nSell, C'130,95,30', "▼", "[FIBO] Venda",  STYLE_SOLID, 1, fb_show_sell, fb_sell_hl); DrawVisualLine("Fibo_Compra", nBuy,  C'130,95,30', "▲", "[FIBO] Compra", STYLE_SOLID, 1, fb_show_buy, fb_buy_hl);
-   } else { DrawVisualLine("Fibo_Venda",  0, clrNONE, "", ""); DrawVisualLine("Fibo_Compra", 0, clrNONE, "", ""); }
+      DrawVisualLine("Fibo_Venda",  nSell, C'140,100,30', "▼", "[FIBO] Venda",  fb_sell_hl ? STYLE_SOLID : STYLE_DOT, 1, fb_show_sell, fb_sell_hl);
+      DrawVisualLine("Fibo_Compra", nBuy,  C'140,100,30', "▲", "[FIBO] Compra", fb_buy_hl ? STYLE_SOLID : STYLE_DOT,  1, fb_show_buy,  fb_buy_hl);
+   } else {
+      DrawVisualLine("Fibo_Venda",  0, clrNONE, "", "");
+      DrawVisualLine("Fibo_Compra", 0, clrNONE, "", "");
+   }
    
    // ZONAS VISUAIS (MODO ZEN SINCRO INTELIGENTE)
    if(g_ViewZonas && g_LinhasModo != 2) {
