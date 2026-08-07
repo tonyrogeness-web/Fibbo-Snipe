@@ -1642,10 +1642,19 @@ void DesenharLinhasChart() {
    // Quando o modo ZEN estiver ativado (g_ViewZonas == true), as linhas normais somem para dar lugar exclusivo à análise ZEN
    bool draw_lines = (!g_ViewZonas && g_LinhasModo != 2);
    
-   bool fr_show_top = (draw_lines && g_ViewFR);
-   bool fr_show_bot = (draw_lines && g_ViewFR);
    bool fr_top_hl = (g_ReadyFR || (MathAbs(g_CachedFRTop-ask)/_Point <= zone_pts));
    bool fr_bot_hl = (g_ReadyFR || (MathAbs(bid-g_CachedFRFundo)/_Point <= zone_pts));
+   
+   bool fr_show_top = false, fr_show_bot = false;
+   if(draw_lines) {
+      if(g_LinhasModo == 0 && g_ViewFR) {
+         fr_show_top = true;
+         fr_show_bot = true;
+      } else if(g_LinhasModo == 1 && g_ViewFR) {
+         if(fr_top_hl) fr_show_top = true;
+         if(fr_bot_hl) fr_show_bot = true;
+      }
+   }
    if(InpUseFR && g_CachedFRTop > 0) {
       DrawVisualLine("FR_Topo",  g_CachedFRTop,   C'120,45,45', "▼", "[FR] Topo",  fr_top_hl ? STYLE_SOLID : STYLE_DOT, 1, fr_show_top, fr_top_hl);
       DrawVisualLine("FR_Fundo", g_CachedFRFundo, C'120,45,45', "▲", "[FR] Fundo", fr_bot_hl ? STYLE_SOLID : STYLE_DOT, 1, fr_show_bot, fr_bot_hl);
@@ -1654,9 +1663,8 @@ void DesenharLinhasChart() {
       DrawVisualLine("FR_Fundo", 0, clrNONE, "", "");
    }
 
-   bool fb_show_sell = (draw_lines && g_ViewFibo);
-   bool fb_show_buy  = (draw_lines && g_ViewFibo);
    double nSell=0, nBuy=0, nSell2=0, nBuy2=0;
+   bool fb_show_sell = false, fb_show_buy = false;
    if(InpUseFiboPullback && g_CachedFiboH > 0) {
       double range = g_CachedFiboH - g_CachedFiboLow;
       if(range >= (g_CachedFiboATR * InpFibMinRange_ATR_Multi)) {
@@ -1667,6 +1675,17 @@ void DesenharLinhasChart() {
       }
       bool fb_sell_hl = (g_ReadyFibo || (MathAbs(nSell-ask)/_Point <= zone_pts));
       bool fb_buy_hl  = (g_ReadyFibo || (MathAbs(bid-nBuy)/_Point <= zone_pts));
+      if(draw_lines) {
+         if(g_LinhasModo == 0 && g_ViewFibo) {
+            fb_show_sell = true;
+            fb_show_buy  = true;
+         } else if(g_LinhasModo == 1 && g_ViewFibo) {
+            bool dir_sell = (is_lateral || t_dir == -1);
+            bool dir_buy  = (is_lateral || t_dir == 1);
+            if(dir_sell && fb_sell_hl) fb_show_sell = true;
+            if(dir_buy  && fb_buy_hl)  fb_show_buy  = true;
+         }
+      }
       DrawVisualLine("Fibo_Venda",  nSell, C'140,100,30', "▼", "[FIBO] Venda",  fb_sell_hl ? STYLE_SOLID : STYLE_DOT, 1, fb_show_sell, fb_sell_hl);
       DrawVisualLine("Fibo_Compra", nBuy,  C'140,100,30', "▲", "[FIBO] Compra", fb_buy_hl ? STYLE_SOLID : STYLE_DOT,  1, fb_show_buy,  fb_buy_hl);
    } else {
