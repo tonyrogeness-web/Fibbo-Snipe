@@ -1098,12 +1098,12 @@ void ComputeWinRate(string filter, int &wins, int &total) {
    wins = 0; total = 0;
    MqlDateTime dt; TimeToStruct(TimeCurrent(), dt);
    dt.hour = 0; dt.min = 0; dt.sec = 0;
-   HistorySelect(StructToTime(dt), TimeCurrent() + 1); // [M6 FIX] +1 sec para garantir todos deals
+   HistorySelect(StructToTime(dt), TimeCurrent() + 1);
    for(int i = 0; i < HistoryDealsTotal(); i++) {
       ulong tk = HistoryDealGetTicket(i);
       if(HistoryDealGetInteger(tk,DEAL_ENTRY) != DEAL_ENTRY_OUT || HistoryDealGetInteger(tk,DEAL_MAGIC) != InpMagic || HistoryDealGetString(tk,DEAL_SYMBOL) != _Symbol) continue;
       if(StringFind(HistoryDealGetString(tk, DEAL_COMMENT), filter) < 0) continue;
-      double p = HistoryDealGetDouble(tk, DEAL_PROFIT) + HistoryDealGetDouble(tk, DEAL_SWAP);
+      double p = HistoryDealGetDouble(tk, DEAL_PROFIT) + HistoryDealGetDouble(tk, DEAL_SWAP) + HistoryDealGetDouble(tk, DEAL_COMMISSION);
       total++; if(p > 0) wins++;
    }
 }
@@ -1111,12 +1111,12 @@ void ComputeWinRate(string filter, int &wins, int &total) {
 void ScanPLHoje(double &sym_out, double &tot_out) {
    MqlDateTime dt; TimeToStruct(TimeCurrent(), dt);
    dt.hour = 0; dt.min = 0; dt.sec = 0;
-   HistorySelect(StructToTime(dt), TimeCurrent() + 1); // [FIX] +1 sec para sincronia imediata de deals do segundo atual
+   HistorySelect(StructToTime(dt), TimeCurrent() + 1);
    sym_out = 0; tot_out = 0;
    for(int i = HistoryDealsTotal()-1; i >= 0; i--) {
       ulong tk = HistoryDealGetTicket(i);
       if(HistoryDealGetInteger(tk,DEAL_ENTRY) != DEAL_ENTRY_OUT || HistoryDealGetInteger(tk,DEAL_MAGIC) != InpMagic) continue;
-      double p = HistoryDealGetDouble(tk, DEAL_PROFIT) + HistoryDealGetDouble(tk, DEAL_SWAP);
+      double p = HistoryDealGetDouble(tk, DEAL_PROFIT) + HistoryDealGetDouble(tk, DEAL_SWAP) + HistoryDealGetDouble(tk, DEAL_COMMISSION);
       tot_out += p;
       if(HistoryDealGetString(tk, DEAL_SYMBOL) == _Symbol) sym_out += p;
    }
@@ -1173,7 +1173,7 @@ int GetStrategyLossStatus_ByTag(string filter1, string filter2="", string exclud
       if(StringFind(comm, filter1) < 0) continue;
       if(filter2 != "" && StringFind(comm, filter2) < 0) continue;
       if(excludeFilter != "" && StringFind(comm, excludeFilter) >= 0) continue;
-      double p = HistoryDealGetDouble(tk, DEAL_PROFIT) + HistoryDealGetDouble(tk, DEAL_SWAP);
+      double p = HistoryDealGetDouble(tk, DEAL_PROFIT) + HistoryDealGetDouble(tk, DEAL_SWAP) + HistoryDealGetDouble(tk, DEAL_COMMISSION);
       if(p < -0.01) losses++; else if(p >= -0.01) break;
    }
    return losses;
@@ -1850,7 +1850,7 @@ void DesenharPainel() {
    if(InpUseCaixoteFilter){PRow("caixote",lx,rx,cur,"Caixote",f_cax?"ATIVO":"OK",f_cax?CLR_RED:CLR_TEAL);cur+=14;}else{ObjectDelete(0,PANEL_PREFIX+"caixote_l");ObjectDelete(0,PANEL_PREFIX+"R_caixote_v");}
    if(InpUseNewsFilter){string s_not=f_not?"BLOQUEADO":"Livre";PRow("noticia",lx,rx,cur,"Noticia",s_not,f_not?CLR_RED:CLR_TEAL,g_TooltipNoticias);cur+=14;if(g_ProximaNoticiaName!=""&&g_ProximaNoticiaTime>TimeCurrent()){int mins_left=(int)((g_ProximaNoticiaTime-TimeCurrent())/60);string s_ni="  -> "+g_ProximaNoticiaName+" ("+IntegerToString(mins_left)+"m)";PLabel("noticia_sub",lx,cur,s_ni,(mins_left<=InpNewsMinutesBefore)?CLR_RED:CLR_TXT_DIM,InpPanelFontSize-2,false,g_TooltipNoticias);cur+=11;}else ObjectDelete(0,PANEL_PREFIX+"noticia_sub");}else{ObjectDelete(0,PANEL_PREFIX+"noticia_l");ObjectDelete(0,PANEL_PREFIX+"R_noticia_v");ObjectDelete(0,PANEL_PREFIX+"noticia_sub");}
 
-   {string s_cdl="FL:"+IntegerToString(g_CachedFluxoL)+" FR:"+IntegerToString(g_CachedFrL)+" FB:"+IntegerToString(g_CachedFiboL);PRow("consec",lx,rx,cur,"Consec.",s_cdl,f_cd?CLR_RED:CLR_TEAL);cur+=14;}
+   {string s_cdl="FR:"+IntegerToString(g_CachedFrL)+" FB:"+IntegerToString(g_CachedFiboL);PRow("consec",lx,rx,cur,"Consec.",s_cdl,f_cd?CLR_RED:CLR_TEAL);cur+=14;}
 
    // Linha MarketGlance — exibida quando ZEN ou Confluencia estiver ativo
    bool mg_ativo = (g_ViewZonas || g_ModoConfluencia > 0);
@@ -1872,6 +1872,11 @@ void DesenharPainel() {
    double lim_perda_m=balance*(InpPerdaMaximaMoedaPct/100.0), lim_lucro_m=balance*(InpLucroAlvoMoedaPct/100.0);
    PSectionBadge("s_res",px,cur,pw,"RESULTADO DIÁRIO",(plTot>=0?CLR_TEAL:CLR_RED)); cur+=16;
    PRow("bal_acc",lx,rx,cur,"Saldo Conta",DoubleToString(balance,2)+" "+AccountInfoString(ACCOUNT_CURRENCY),CLR_TXT_WHITE); cur+=14;
+   double tot_profit_acc = (g_StartBalance > 0) ? (balance - g_StartBalance) : 0.0;
+   double tot_profit_pct = (g_StartBalance > 0) ? (tot_profit_acc / g_StartBalance * 100.0) : 0.0;
+   string s_tot_acc_pct  = StringFormat(" (%.1f%%)", tot_profit_pct);
+   color c_totAcc        = (tot_profit_acc > 0) ? CLR_TEAL : ((tot_profit_acc < 0) ? CLR_RED : CLR_TXT_PRIMARY);
+   PRow("pl_tot_acc",lx,rx,cur,"Global (Total)",(tot_profit_acc>=0?"+":"")+DoubleToString(tot_profit_acc,2)+" "+AccountInfoString(ACCOUNT_CURRENCY)+s_tot_acc_pct,c_totAcc); cur+=14;
    PRow("pl_sym",lx,rx,cur,_Symbol+" (Dia)",(plSym>=0?"+":"")+DoubleToString(plSym,2)+" "+AccountInfoString(ACCOUNT_CURRENCY)+s_pls_pct,c_plSym); cur+=14;
    if(lim_lucro_m>0&&InpUseFechamentoMoeda){PLabel("t_meta",lx,cur,"Meta (+"+DoubleToString(InpLucroAlvoMoedaPct,1)+"%)",CLR_TXT_DIM,InpPanelFontSize-1);PLabelR("m_meta",rx,cur,MQLProgressBar(plSym>=0?plSym:0,lim_lucro_m,12),CLR_TEAL,InpPanelFontSize-2);cur+=12;}
    if(lim_perda_m>0&&InpUseFechamentoMoeda){PLabel("t_ddm",lx,cur,"Risco (-"+DoubleToString(InpPerdaMaximaMoedaPct,1)+"%)",CLR_TXT_DIM,InpPanelFontSize-1);PLabelR("m_ddm",rx,cur,MQLProgressBar(plSym<0?plSym:0,lim_perda_m,12),CLR_RED,InpPanelFontSize-2);cur+=14;}
@@ -1880,7 +1885,8 @@ void DesenharPainel() {
    if(InpPropFirmMode) {
       double eq = AccountInfoDouble(ACCOUNT_EQUITY);
       double maxDDUsd = (g_StartBalance > 0) ? (g_StartBalance - eq) : 0; if(maxDDUsd < 0) maxDDUsd = 0;
-      double distMaxLossUsd = (balance * (InpPropFirmMaxDDLimitPct / 100.0)) - maxDDUsd;
+      double baseCap = (g_StartBalance > 0) ? g_StartBalance : balance;
+      double distMaxLossUsd = (baseCap * (InpPropFirmMaxDDLimitPct / 100.0)) - maxDDUsd;
       double distMaxLossPct = (balance > 0) ? (distMaxLossUsd / balance * 100.0) : 0;
       double totalProfitUsd = balance - g_StartBalance;
       double fase1TargetUsd = g_StartBalance * (InpPropFase1TargetPct / 100.0);
@@ -1954,6 +1960,11 @@ void DesenharPainel() {
       string s_dd=DoubleToString(_pl_tot,2)+" / "+DoubleToString(_prop_lim,2)+" "+AccountInfoString(ACCOUNT_CURRENCY);
       color c_dd=(_pl_tot<=_prop_lim*0.75)?CLR_RED:(_pl_tot<=_prop_lim*0.5)?CLR_AMBER:CLR_TEAL;
       PRow("prop_dd",lx,rx,cur,"P&L / Limite Diário",s_dd,c_dd); cur+=16;
+   } else {
+      ObjectDelete(0, PANEL_PREFIX+"s_prop_la"); ObjectDelete(0, PANEL_PREFIX+"s_prop_bg"); ObjectDelete(0, PANEL_PREFIX+"s_prop_tx"); ObjectDelete(0, PANEL_PREFIX+"s_prop_lb");
+      ObjectDelete(0, PANEL_PREFIX+"btn_toggle_prop");
+      ObjectDelete(0, PANEL_PREFIX+"prop_cons_l"); ObjectDelete(0, PANEL_PREFIX+"R_prop_cons_v");
+      ObjectDelete(0, PANEL_PREFIX+"prop_dd_l");   ObjectDelete(0, PANEL_PREFIX+"R_prop_dd_v");
    }
    PSectionBadge("s_ctrl",px,cur,pw,"CONTROLES",CLR_TXT_DIM); cur+=16;
    int btn_w=(pw-(pad*2)-8)/2;
@@ -2009,11 +2020,12 @@ void DesenharPainelDiag() {
    bool any_glb=(d_gblock||d_block||d_pause||d_session||d_maxpos||d_spr||d_liq||d_osc||d_not||d_cax);
    color c_border=any_glb?CLR_RED:CLR_PURPLE; static int s_diag_h=250;
    DPRECT("border",dpx-1,dpy-1,dpw+2,s_diag_h+2,CLR_LINE_HARD,(int)c_border,197);DPRECT("bg",dpx,dpy,dpw,s_diag_h,CLR_BG_BASE,-1,198);DPRECT("hdr_bg",dpx,dpy,dpw,2,CLR_PURPLE,-1,200);DPRECT("hdr_main",dpx,dpy+2,dpw,18,CLR_BG_HEADER,-1,199);DPLBL("hdr_ico",dlx,cur+4,"⚡",CLR_PURPLE,InpPanelFontSize,true);DPLBL("hdr_ttl",dlx+14,cur+4,"DIAGNÓSTICO MTF",CLR_TXT_WHITE,InpPanelFontSize,true);
-   {string _bn=DP+"btn_close";if(ObjectFind(0,_bn)<0)ObjectCreate(0,_bn,OBJ_BUTTON,0,0,0);ObjectSetInteger(0,_bn,OBJPROP_XDISTANCE,drx-8);ObjectSetInteger(0,_bn,OBJPROP_YDISTANCE,cur+3);ObjectSetInteger(0,_bn,OBJPROP_XSIZE,16);ObjectSetInteger(0,_bn,OBJPROP_YSIZE,14);ObjectSetString(0,_bn,OBJPROP_TEXT,"✕");ObjectSetInteger(0,_bn,OBJPROP_BGCOLOR,CLR_BG_HEADER);ObjectSetInteger(0,_bn,OBJPROP_COLOR,CLR_TXT_LABEL);ObjectSetInteger(0,_bn,OBJPROP_BORDER_COLOR,CLR_LINE_HARD);ObjectSetString(0,_bn,OBJPROP_FONT,"Arial Bold");ObjectSetInteger(0,_bn,OBJPROP_FONTSIZE,8);ObjectSetInteger(0,_bn,OBJPROP_CORNER,CORNER_LEFT_UPPER);ObjectSetInteger(0,_bn,OBJPROP_SELECTABLE,false);ObjectSetInteger(0,_bn,OBJPROP_HIDDEN,true);ObjectSetInteger(0,_bn,OBJPROP_STATE,false);ObjectSetInteger(0,_bn,OBJPROP_ZORDER,310);}cur+=20;
-   DPRECT("tab_bg",dpx,cur,dpw,24,CLR_BG_SECTION,-1,199);int tw=(dpw-16)/3;
-   {string _bn=DP+"btn_tab_fl";if(ObjectFind(0,_bn)<0)ObjectCreate(0,_bn,OBJ_BUTTON,0,0,0);ObjectSetInteger(0,_bn,OBJPROP_XDISTANCE,dlx);ObjectSetInteger(0,_bn,OBJPROP_YDISTANCE,cur+2);ObjectSetInteger(0,_bn,OBJPROP_XSIZE,tw);ObjectSetInteger(0,_bn,OBJPROP_YSIZE,20);ObjectSetString(0,_bn,OBJPROP_TEXT,"FLUXO");ObjectSetInteger(0,_bn,OBJPROP_BGCOLOR,g_DiagTab==0?CLR_TEAL:CLR_BG_CARD);ObjectSetInteger(0,_bn,OBJPROP_COLOR,g_DiagTab==0?CLR_TXT_WHITE:CLR_TXT_LABEL);ObjectSetInteger(0,_bn,OBJPROP_BORDER_COLOR,CLR_LINE_HARD);ObjectSetString(0,_bn,OBJPROP_FONT,"Arial Bold");ObjectSetInteger(0,_bn,OBJPROP_FONTSIZE,8);ObjectSetInteger(0,_bn,OBJPROP_CORNER,CORNER_LEFT_UPPER);ObjectSetInteger(0,_bn,OBJPROP_SELECTABLE,false);ObjectSetInteger(0,_bn,OBJPROP_HIDDEN,true);ObjectSetInteger(0,_bn,OBJPROP_STATE,false);ObjectSetInteger(0,_bn,OBJPROP_ZORDER,310);}
-   {string _bn=DP+"btn_tab_fr";if(ObjectFind(0,_bn)<0)ObjectCreate(0,_bn,OBJ_BUTTON,0,0,0);ObjectSetInteger(0,_bn,OBJPROP_XDISTANCE,dlx+tw+2);ObjectSetInteger(0,_bn,OBJPROP_YDISTANCE,cur+2);ObjectSetInteger(0,_bn,OBJPROP_XSIZE,tw);ObjectSetInteger(0,_bn,OBJPROP_YSIZE,20);ObjectSetString(0,_bn,OBJPROP_TEXT,"F.ROMP"+m_dir);ObjectSetInteger(0,_bn,OBJPROP_BGCOLOR,g_DiagTab==1?CLR_RED:CLR_BG_CARD);ObjectSetInteger(0,_bn,OBJPROP_COLOR,g_DiagTab==1?CLR_TXT_WHITE:CLR_TXT_LABEL);ObjectSetInteger(0,_bn,OBJPROP_BORDER_COLOR,CLR_LINE_HARD);ObjectSetString(0,_bn,OBJPROP_FONT,"Arial Bold");ObjectSetInteger(0,_bn,OBJPROP_FONTSIZE,8);ObjectSetInteger(0,_bn,OBJPROP_CORNER,CORNER_LEFT_UPPER);ObjectSetInteger(0,_bn,OBJPROP_SELECTABLE,false);ObjectSetInteger(0,_bn,OBJPROP_HIDDEN,true);ObjectSetInteger(0,_bn,OBJPROP_STATE,false);ObjectSetInteger(0,_bn,OBJPROP_ZORDER,310);}
-   {string _bn=DP+"btn_tab_fb";if(ObjectFind(0,_bn)<0)ObjectCreate(0,_bn,OBJ_BUTTON,0,0,0);ObjectSetInteger(0,_bn,OBJPROP_XDISTANCE,dlx+tw*2+4);ObjectSetInteger(0,_bn,OBJPROP_YDISTANCE,cur+2);ObjectSetInteger(0,_bn,OBJPROP_XSIZE,tw);ObjectSetInteger(0,_bn,OBJPROP_YSIZE,20);ObjectSetString(0,_bn,OBJPROP_TEXT,"FIBO"+m_dir);ObjectSetInteger(0,_bn,OBJPROP_BGCOLOR,g_DiagTab==2?CLR_AMBER:CLR_BG_CARD);ObjectSetInteger(0,_bn,OBJPROP_COLOR,g_DiagTab==2?CLR_TXT_WHITE:CLR_TXT_LABEL);ObjectSetInteger(0,_bn,OBJPROP_BORDER_COLOR,CLR_LINE_HARD);ObjectSetString(0,_bn,OBJPROP_FONT,"Arial Bold");ObjectSetInteger(0,_bn,OBJPROP_FONTSIZE,8);ObjectSetInteger(0,_bn,OBJPROP_CORNER,CORNER_LEFT_UPPER);ObjectSetInteger(0,_bn,OBJPROP_SELECTABLE,false);ObjectSetInteger(0,_bn,OBJPROP_HIDDEN,true);ObjectSetInteger(0,_bn,OBJPROP_STATE,false);ObjectSetInteger(0,_bn,OBJPROP_ZORDER,310);}
+   {string _bn=DP+"btn_close";if(ObjectFind(0,_bn)<0)ObjectCreate(0,_bn,OBJ_BUTTON,0,0,0);ObjectSetInteger(0,_bn,OBJPROP_XDISTANCE,drx-8);ObjectSetInteger(0,_bn,OBJPROP_YDISTANCE,cur+3);ObjectSetInteger(0,_bn,OBJPROP_XSIZE,16);ObjectSetInteger(0,_bn,OBJPROP_YSIZE,14);ObjectSetString(0,_bn,OBJPROP_TEXT,"✕");ObjectSetInteger(0,_bn,OBJPROP_BGCOLOR,CLR_BG_HEADER);ObjectSetInteger(0,_bn,OBJPROP_COLOR,CLR_TXT_LABEL);ObjectSetInteger(0,_bn,OBJPROP_BORDER_COLOR,CLR_LINE_HARD);ObjectSetString(0,_bn,OBJPROP_FONT,"Arial Bold");ObjectSetInteger(0,_bn,OBJPROP_FONTSIZE,8);ObjectSetInteger(0,_bn,OBJPROP_CORNER,CORNER_LEFT_UPPER);ObjectSetInteger(0,_bn,OBJPROP_SELECTABLE,false);ObjectSetInteger(0,_bn,OBJPROP_HIDDEN,true);ObjectSetInteger(0,_bn,OBJPROP_STATE,false);ObjectSetInteger(0,_bn,OBJPROP_ZORDER,310);}
+   ObjectDelete(0, DP+"btn_tab_fl");
+   if(g_DiagTab == 0) g_DiagTab = 1;
+   DPRECT("tab_bg",dpx,cur,dpw,24,CLR_BG_SECTION,-1,199);int tw=(dpw-16)/2;
+   {string _bn=DP+"btn_tab_fr";if(ObjectFind(0,_bn)<0)ObjectCreate(0,_bn,OBJ_BUTTON,0,0,0);ObjectSetInteger(0,_bn,OBJPROP_XDISTANCE,dlx);ObjectSetInteger(0,_bn,OBJPROP_YDISTANCE,cur+2);ObjectSetInteger(0,_bn,OBJPROP_XSIZE,tw);ObjectSetInteger(0,_bn,OBJPROP_YSIZE,20);ObjectSetString(0,_bn,OBJPROP_TEXT,"F.ROMP"+m_dir);ObjectSetInteger(0,_bn,OBJPROP_BGCOLOR,g_DiagTab==1?CLR_RED:CLR_BG_CARD);ObjectSetInteger(0,_bn,OBJPROP_COLOR,g_DiagTab==1?CLR_TXT_WHITE:CLR_TXT_LABEL);ObjectSetInteger(0,_bn,OBJPROP_BORDER_COLOR,CLR_LINE_HARD);ObjectSetString(0,_bn,OBJPROP_FONT,"Arial Bold");ObjectSetInteger(0,_bn,OBJPROP_FONTSIZE,8);ObjectSetInteger(0,_bn,OBJPROP_CORNER,CORNER_LEFT_UPPER);ObjectSetInteger(0,_bn,OBJPROP_SELECTABLE,false);ObjectSetInteger(0,_bn,OBJPROP_HIDDEN,true);ObjectSetInteger(0,_bn,OBJPROP_STATE,false);ObjectSetInteger(0,_bn,OBJPROP_ZORDER,310);}
+   {string _bn=DP+"btn_tab_fb";if(ObjectFind(0,_bn)<0)ObjectCreate(0,_bn,OBJ_BUTTON,0,0,0);ObjectSetInteger(0,_bn,OBJPROP_XDISTANCE,dlx+tw+2);ObjectSetInteger(0,_bn,OBJPROP_YDISTANCE,cur+2);ObjectSetInteger(0,_bn,OBJPROP_XSIZE,tw);ObjectSetInteger(0,_bn,OBJPROP_YSIZE,20);ObjectSetString(0,_bn,OBJPROP_TEXT,"FIBO"+m_dir);ObjectSetInteger(0,_bn,OBJPROP_BGCOLOR,g_DiagTab==2?CLR_AMBER:CLR_BG_CARD);ObjectSetInteger(0,_bn,OBJPROP_COLOR,g_DiagTab==2?CLR_TXT_WHITE:CLR_TXT_LABEL);ObjectSetInteger(0,_bn,OBJPROP_BORDER_COLOR,CLR_LINE_HARD);ObjectSetString(0,_bn,OBJPROP_FONT,"Arial Bold");ObjectSetInteger(0,_bn,OBJPROP_FONTSIZE,8);ObjectSetInteger(0,_bn,OBJPROP_CORNER,CORNER_LEFT_UPPER);ObjectSetInteger(0,_bn,OBJPROP_SELECTABLE,false);ObjectSetInteger(0,_bn,OBJPROP_HIDDEN,true);ObjectSetInteger(0,_bn,OBJPROP_STATE,false);ObjectSetInteger(0,_bn,OBJPROP_ZORDER,310);}
    cur+=24;DPRECT("sep_t",dpx,cur,dpw,1,CLR_LINE_SOFT,-1,202);cur+=4;int ridx=0;
    #define DROW_DYN(lbl_,val_,blk_) {string _id="r_"+IntegerToString(ridx);color _ca=blk_?CLR_RED:CLR_TEAL;string _pfx=blk_?"✗  ":"✓  ";DPRECT(_id+"_bg",dpx,cur,dpw,18,blk_?CLR_RED_DIM:CLR_BG_SECTION,blk_?CLR_RED:-1,200);DPLBL(_id+"_l",dlx,cur+3,_pfx+lbl_,_ca,InpPanelFontSize-1,blk_);DPLBLR(_id+"_v",drx,cur+3,val_,_ca,InpPanelFontSize-1,false);cur+=20;ridx++;}
    DPLBL("gl_hdr",dlx,cur+4,"⚠ FILTROS GLOBAIS:",CLR_TXT_LABEL,InpPanelFontSize,true);cur+=20;
@@ -2027,29 +2039,23 @@ void DesenharPainelDiag() {
    }
    cur+=8;DPRECT("sep_s",dpx,cur,dpw,1,CLR_LINE_SOFT,-1,202);cur+=6;
 
-   string s_name=(g_DiagTab==0)?"FLUXO L1":(g_DiagTab==1)?"F.ROMP"+m_dir:"FIBO"+m_dir;
-   color c_name=(g_DiagTab==0)?CLR_TEAL:(g_DiagTab==1)?CLR_RED:CLR_AMBER;
+   string s_name=(g_DiagTab==2)?"FIBO"+m_dir:"F.ROMP"+m_dir;
+   color c_name=CLR_TXT_PRIMARY;
    DPLBL("st_hdr",dlx,cur+2,"REQUISITOS - "+s_name+":",c_name,InpPanelFontSize,true);cur+=20;
    bool is_lat=IsMercadoLateral(), s_rdy=false; int tD=g_CachedTrendDir;
-   if(g_DiagTab==0){
-      bool u_f=InpUseFluxo, c_c=g_CachedFluxoCdOk, c_p=g_FluxoParedeAtiva, c_d=false, c_l=(g_CachedCanalHigh>0&&g_CachedCanalLow>0);
-      if(!is_lat&&(tD==1||tD==-1))c_d=true; if(is_lat)c_d=true;
-      DROW_DYN("Uso Estratégia",u_f?"sim":"OFF",!u_f)DROW_DYN("Cooldown",c_c?"livre":"AGUARDAR",!c_c)DROW_DYN("Alvo/Canal",c_l?"sim":"NÃO",!c_l)DROW_DYN("Alinhamento",c_d?"sim":"NÃO",!c_d)if(!is_lat)DROW_DYN("Parede Estrutural",c_p?"MUITO PERTO":"ok",c_p)DROW_DYN("Modo Lateral",is_lat?"REVERSÃO":"tendência",false)
+   if(g_DiagTab==2){
+      bool u_b=InpUseFiboPullback, c_c=g_CachedFiboCdOk; bool c_l=(g_CachedFiboH>0&&g_CachedFiboLow>0&&g_CachedFiboATR>0);
+      bool c_a=p_UsePassaFiltroADXFibo?(g_H4_ADX>=cfg_ADX_MinLevel):true; bool c_t=(tD==1||tD==-1);
+      DROW_DYN("Uso Estratégia",u_b?"sim":"OFF",!u_b)DROW_DYN("Cooldown Fibo",c_c?"livre":"AGUARDAR",!c_c)DROW_DYN("Cálculo Níveis H4",c_l?"sim":"NÃO",!c_l)DROW_DYN("Tendência Macro",c_t?"alinhado":"NEUTRO",!c_t)DROW_DYN("Força H4 (ADX="+DoubleToString(g_H4_ADX,1)+")",c_a?"ok":"FRACO",!c_a)
       string confl_val="OFF"; if(g_ModoConfluencia>0){ if(g_MG_BuyAllowed&&!g_MG_SellAllowed) confl_val="SO COMPRA"; else if(!g_MG_BuyAllowed&&g_MG_SellAllowed) confl_val="SO VENDA"; else confl_val="LIVRE"; } DROW_DYN("Filtro MktGlance",confl_val,false)
-      s_rdy=(!any_glb&&u_f&&c_c&&c_d&&c_l&&(!c_p||is_lat));
-   } else if(g_DiagTab==1){
+      s_rdy=(!any_glb&&u_b&&c_c&&c_l&&c_a&&c_t);
+   } else {
       bool u_r=InpUseFR, c_c=g_CachedFrCdOk, c_l=(g_CachedFRTop>0&&g_CachedFRFundo>0);
       bool dir_s_ok,dir_b_ok; GetFR_DirecaoOk(g_CachedMedDir,g_CachedRSI,dir_s_ok,dir_b_ok);
       bool dir_algum=(dir_s_ok||dir_b_ok); bool c_dr=InpFR_Direct_Entries;
       DROW_DYN("Uso Estratégia",u_r?"sim":"OFF",!u_r)DROW_DYN("Cooldown L1",c_c?"livre":"AGUARDAR",!c_c)DROW_DYN("Mapeamento L1",c_l?"sim":"NÃO",!c_l)DROW_DYN("Dir. L1 OK",dir_algum?"sim":"NEUTRO BLOQ.",!dir_algum)DROW_DYN("FR Direct",c_dr?"ativo":"off",false)
       string confl_val="OFF"; if(g_ModoConfluencia>0){ if(g_MG_BuyAllowed&&!g_MG_SellAllowed) confl_val="SO COMPRA"; else if(!g_MG_BuyAllowed&&g_MG_SellAllowed) confl_val="SO VENDA"; else confl_val="LIVRE"; } DROW_DYN("Filtro MktGlance",confl_val,false)
       s_rdy=(!any_glb&&u_r&&c_c&&c_l&&dir_algum);
-   } else if(g_DiagTab==2){
-      bool u_b=InpUseFiboPullback, c_c=g_CachedFiboCdOk; bool c_l=(g_CachedFiboH>0&&g_CachedFiboLow>0&&g_CachedFiboATR>0);
-      bool c_a=p_UsePassaFiltroADXFibo?(g_H4_ADX>=cfg_ADX_MinLevel):true; bool c_t=(tD==1||tD==-1);
-      DROW_DYN("Uso Estratégia",u_b?"sim":"OFF",!u_b)DROW_DYN("Cooldown Fibo",c_c?"livre":"AGUARDAR",!c_c)DROW_DYN("Cálculo Níveis H4",c_l?"sim":"NÃO",!c_l)DROW_DYN("Tendência Macro",c_t?"alinhado":"NEUTRO",!c_t)DROW_DYN("Força H4 (ADX="+DoubleToString(g_H4_ADX,1)+")",c_a?"ok":"FRACO",!c_a)
-      string confl_val="OFF"; if(g_ModoConfluencia>0){ if(g_MG_BuyAllowed&&!g_MG_SellAllowed) confl_val="SO COMPRA"; else if(!g_MG_BuyAllowed&&g_MG_SellAllowed) confl_val="SO VENDA"; else confl_val="LIVRE"; } DROW_DYN("Filtro MktGlance",confl_val,false)
-      s_rdy=(!any_glb&&u_b&&c_c&&c_l&&c_a&&c_t);
    }
    cur+=4;
    for(int i=ridx;i<20;i++){string _id="r_"+IntegerToString(i);ObjectSetInteger(0,DP+_id+"_bg",OBJPROP_XDISTANCE,-1000);ObjectSetInteger(0,DP+_id+"_bg",OBJPROP_HIDDEN,true);ObjectSetInteger(0,DP+_id+"_l",OBJPROP_XDISTANCE,-1000);ObjectSetInteger(0,DP+_id+"_v",OBJPROP_XDISTANCE,-1000);}
@@ -2079,7 +2085,7 @@ void OnChartEvent(const int id, const long &lparam, const double &dparam, const 
       else if(btn==PANEL_PREFIX+"btn_col_term"){ g_ColTerminal=!g_ColTerminal; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); }
       else if(btn==PANEL_PREFIX+"btn_toggle_prop"||btn=="FS_PROP_HUD_BTN_CLOSE"){ g_ShowPropFirmHUD=(btn==PANEL_PREFIX+"btn_toggle_prop")?!g_ShowPropFirmHUD:false; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharPainelPropFirm(); }
       else if(btn==PANEL_PREFIX+"btn_diag"||btn==PANEL_PREFIX+"D_btn_close"){ g_ShowDiag=(btn==PANEL_PREFIX+"btn_diag")?!g_ShowDiag:false; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharPainelDiag(); }
-      else if(btn==PANEL_PREFIX+"D_btn_tab_fl"){ g_DiagTab=0; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainelDiag(); }
+      else if(btn==PANEL_PREFIX+"D_btn_tab_fl"){ ObjectDelete(0,btn); }
       else if(btn==PANEL_PREFIX+"D_btn_tab_fr"){ g_DiagTab=1; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainelDiag(); }
       else if(btn==PANEL_PREFIX+"D_btn_tab_fb"){ g_DiagTab=2; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainelDiag(); }
       ChartRedraw(0);
