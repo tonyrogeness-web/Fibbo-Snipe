@@ -554,12 +554,12 @@ input group "=== FILTRO DE VIABILIDADE (TIRO CURTO) ==="
 input double InpMinViableATR_Multi = 1.0;
 
 input group "=== TENDÊNCIA E FLUXO ==="
-input bool InpAutoTF = true;            // Seleção Automática de TF por Moeda
-input ENUM_TIMEFRAMES InpTF = PERIOD_H2; // TF Manual (usado apenas se AutoTF=false)
+input bool InpAutoTF = false;            // Seleção Automática de TF por Moeda (false = usa InpTF)
+input ENUM_TIMEFRAMES InpTF = PERIOD_H1; // [SWEET SPOT] TF de execução H1 Moderado
 input int InpCandlesToLook = 14;
 input bool InpUseTrendFilter = true;
 input int InpShortEMA_Period = 9;
-input bool InpUseFluxo = false, InpFluxo_GatilhoPrecoce = false, InpFluxo_IgnoreWallStrong = true, InpUseVolumeFilter = true, InpFluxo_UseExhaustion = true; // [OTIMIZADO PROP] Fluxo=false elimina violinos em M15
+input bool InpUseFluxo = true, InpFluxo_GatilhoPrecoce = true, InpFluxo_IgnoreWallStrong = true, InpUseVolumeFilter = true, InpFluxo_UseExhaustion = true; // [OTIMIZADO PROP] Fluxo ativado para H1
 
 input group "=== FALSO ROMPIMENTO ==="
 input bool InpUseFR = true, InpFR_UseRSI = true;
@@ -607,7 +607,7 @@ input bool InpUseSessionFilter = true;
 input int InpSessionStartHour = 10;
 input int InpSessionEndHour = 22;
 input bool InpSession_IgnoreOnSpike = true;
-input bool InpCloseDaily = true;
+input bool InpCloseDaily = false; // [RECOMENDADO FOREX] Desativado para permitir que posições busquem TP2 completo de noite
 input int InpDailyCloseHour = 23;
 input int InpDailyCloseMinute = 30;
 input int InpFridayCloseHour = 23;
@@ -687,10 +687,12 @@ int cfg_RSI_Period, cfg_EMA_Candles;
 
 string g_Log[3] = {"Aguardando mercado...", "---", "---"};
 bool g_BotPaused = false, g_Minimized = false, g_ViewFluxo = true, g_ViewFR = true, g_ViewFibo = true, g_ViewZonas = false, g_ModoAnalise = false;
-int g_ModoConfluencia = 3; // [MOD] Padrao H2 (Market Glance)
+int g_ModoConfluencia = 3; // [MOD] Padrao H2 (Market Glance CONSERVADOR)
 bool g_ReadyFluxo = false, g_ReadyFR = false, g_ReadyFibo = false, g_FluxoParedeAtiva = false;
 int g_LinhasModo = 0; // [PADRÃO] Modo TODAS as linhas ativado por padrão
-bool g_ColPosicao = true, g_ColTerminal = false, g_ShowDiag = false, g_ShowPropFirmHUD = false;
+bool g_ColPosicao = true, g_ColTerminal = false, g_ShowDiag = false, g_ShowPropFirmHUD = false, g_ShowConfigPanel = false;
+bool g_AutoTF = false;
+double g_PropMaxRiskPct = 0.6;
 int g_DiagTab = 0;
 CTrade trade;
 
@@ -809,9 +811,9 @@ double ComputeLot_ByDistance(double current_sl_pts, double current_atr) {
    // Proporção ATR atual vs ATR L1 determina o scaling de risco
    double ratio = current_atr / g_CachedATR;
 
-   // [PROP] No Modo Prop Firm, substitui limites de risco pelos da mesa
-   double base_risk = InpPropFirmMode ? MathMin(InpBaseRisk_L1, InpPropMaxRiskPct) : InpBaseRisk_L1;
-   double max_risk  = InpPropFirmMode ? InpPropMaxRiskPct : InpMaxAutoRisk;
+   // [PROP] No Modo Prop Firm, usa g_PropMaxRiskPct da mesa; fora de Prop Firm, usa InpBaseRisk_L1
+   double base_risk = InpPropFirmMode ? g_PropMaxRiskPct : InpBaseRisk_L1;
+   double max_risk  = InpPropFirmMode ? g_PropMaxRiskPct : InpMaxAutoRisk;
    double dynamic_risk = MathMin(max_risk, base_risk * ratio);
    
    double risk_money = AccountInfoDouble(ACCOUNT_BALANCE) * (dynamic_risk / 100.0);
@@ -844,7 +846,7 @@ void LiberarTodosHandles() {
 // [AUTO-TF] DETECCAO AUTOMATICA DE TIMEFRAME POR SIMBOLO
 //===================================================================
 void AutoSelecionarTF() {
-   if(!InpAutoTF) {
+   if(!g_AutoTF) {
       g_TF_L1 = InpTF;
       TF_L2   = (g_TF_L1 <= PERIOD_H2) ? PERIOD_H4 : PERIOD_D1;
       Print("[AUTO-TF] Modo manual: L1=", EnumToString(g_TF_L1), " | L2=", EnumToString(TF_L2));
@@ -905,14 +907,17 @@ void AutoSelecionarTF() {
       g_TF_L1 = PERIOD_H1;   // Cripto: execucao H1
       TF_L2   = PERIOD_H4;   // Confluencia H4
    } else if(isForexExplicito || isForexGenerico) {
-      g_TF_L1 = PERIOD_H2;   // Forex: execucao H2
+      g_TF_L1 = PERIOD_H1;   // Forex: execucao H1 (Sweet Spot Prop Firm)
       TF_L2   = PERIOD_H4;   // Confluencia H4 (macro direcional)
    } else {                   // Fallback: simbolo nao reconhecido
       g_TF_L1 = InpTF;
       TF_L2   = PERIOD_H4;
       Print("[AUTO-TF] AVISO: Simbolo nao reconhecido, usando InpTF=", EnumToString(g_TF_L1));
    }
-   Print("[AUTO-TF] Simbolo=", _Symbol, " | L1=", EnumToString(g_TF_L1), " | L2=", EnumToString(TF_L2));
+   if(g_TF_L1 == PERIOD_H1) g_ModoConfluencia = 3;       // Sync CONFL: H2 (CONSERVADOR) por padrão para H1
+   else if(g_TF_L1 == PERIOD_H2) g_ModoConfluencia = 3;  // Sync CONFL: H2 (CONSERVADOR)
+   else if(g_TF_L1 == PERIOD_M15) g_ModoConfluencia = 1; // Sync CONFL: M15 (AGRESSIVO)
+   Print("[AUTO-TF] Simbolo=", _Symbol, " | L1=", EnumToString(g_TF_L1), " | L2=", EnumToString(TF_L2), " | Confl=", g_ModoConfluencia);
 }
 
 
@@ -1461,14 +1466,14 @@ void GetFR_DirecaoOk(int medTrendDir, double rsi_val, bool &dir_sell_ok, bool &d
    else { if(InpFR_NeutralDirByRSI) { dir_sell_ok = (rsi_val >= InpFR_NeutralRSI_Sell); dir_buy_ok  = (rsi_val <= InpFR_NeutralRSI_Buy); } else { dir_sell_ok = false; dir_buy_ok = false; } }
 }
 
-double GetFR_MagTol(double atr_val, double adx_val) {
+double GetFR_MagTol(double atr_val, double adx_val, ENUM_TIMEFRAMES tf = PERIOD_CURRENT) {
    // [B10 FIX] fallback mínimo sensato se ATR for 0 (evita zona de largura 0)
    if(atr_val <= 0) return SymbolInfoDouble(_Symbol, SYMBOL_POINT) * 50;
 
-   // [R2] Zona magnética adaptativa: ajusta % com base na volatilidade relativa da última vela
-   // Se a vela recente foi grande (vol alta), abre a zona; se foi pequena, aperta
+   // [R2 FIX] Usa o TF recebido como parâmetro em vez de hardcoded g_TF_L1
+   ENUM_TIMEFRAMES target_tf = (tf == PERIOD_CURRENT) ? g_TF_L1 : tf;
    double pct = InpFR_MagneticZoneATRPct;
-   double curr_range = iHigh(_Symbol, g_TF_L1, 1) - iLow(_Symbol, g_TF_L1, 1);
+   double curr_range = iHigh(_Symbol, target_tf, 1) - iLow(_Symbol, target_tf, 1);
    double vol_ratio  = (curr_range > 0) ? (curr_range / atr_val) : 1.0;
    if(vol_ratio > 1.5) pct = pct * 1.33;       // vela grande → zona mais larga
    else if(vol_ratio < 0.6) pct = pct * 0.80;  // vela pequena → zona mais estreita
@@ -1808,8 +1813,8 @@ string ComputePanelHash() {
    // [BUG-M2 FIX] P&L flutuante adicionado ao hash — painel atualiza a cada R$0,10 de variação
    int pl_sym_dec = (int)(g_FloatingPlSym * 10);
    int pl_tot_dec = (int)(g_FloatingPlTot * 10);
-   return StringFormat("%d|%d|%d|%d|%s|%s|%d|%d|%d|%d|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d",
-      (int)g_ColPosicao,(int)g_ColTerminal,(int)g_ShowDiag,g_DiagTab,
+   return StringFormat("%d|%d|%d|%d|%d|%s|%s|%d|%d|%d|%d|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d",
+      (int)g_ColPosicao,(int)g_ColTerminal,(int)g_ShowDiag,(int)g_ShowConfigPanel,g_DiagTab,
       g_ProximaNoticiaName,g_Log[0],
       g_NPosDay,g_NPosSwing,g_FastNPosSymbol,
       (int)g_ViewZonas,mg_state,
@@ -1860,9 +1865,9 @@ void DesenharPainel() {
    PLabelC("hdr_title",hdr_cx,cur+11,"ORION LOGIC PRO",CLR_TXT_WHITE,10,true);
    PLabelC("hdr_ver",  hdr_cx,cur+28,"v28.5  •  "+_Symbol+"  •  L1:"+tf_str+" | L2:"+tf_l2,CLR_BLUE,InpPanelFontSize-1,false);
    // Controles no topo-direita
-   color c_pill=blocked?CLR_RED_DIM:(g_BotPaused?CLR_AMBER_DIM:CLR_TEAL_DIM); int pill_x=rx-92, pill_w=88, pill_cx=pill_x+pill_w/2; PRect("hdr_pill",pill_x,cur+5,pill_w,17,c_pill,c_status,202);
+   color c_pill=blocked?CLR_RED_DIM:(g_BotPaused?CLR_AMBER_DIM:CLR_TEAL_DIM); int pill_x=rx-140, pill_w=92, pill_cx=pill_x+pill_w/2; PRect("hdr_pill",pill_x,cur+5,pill_w,17,c_pill,c_status,202);
    {string n=PANEL_PREFIX+"hdr_stat"; if(ObjectFind(0,n)<0) ObjectCreate(0,n,OBJ_LABEL,0,0,0); ObjectSetInteger(0,n,OBJPROP_XDISTANCE,pill_cx); ObjectSetInteger(0,n,OBJPROP_YDISTANCE,cur+8); ObjectSetString(0,n,OBJPROP_TEXT,"* "+s_status); ObjectSetInteger(0,n,OBJPROP_COLOR,c_status); ObjectSetString(0,n,OBJPROP_FONT,"Arial Bold"); ObjectSetInteger(0,n,OBJPROP_FONTSIZE,InpPanelFontSize-2); ObjectSetInteger(0,n,OBJPROP_CORNER,CORNER_LEFT_UPPER); ObjectSetInteger(0,n,OBJPROP_ANCHOR,ANCHOR_UPPER); ObjectSetInteger(0,n,OBJPROP_BACK,false); ObjectSetInteger(0,n,OBJPROP_SELECTABLE,false); ObjectSetInteger(0,n,OBJPROP_HIDDEN,true); ObjectSetInteger(0,n,OBJPROP_ZORDER,252); ObjectSetString(0,n,OBJPROP_TOOLTIP,"\n");}
-   PButton("btn_diag",rx-136,cur+5,24,17,g_ShowDiag?"X":"[?]",g_ShowDiag?CLR_PURPLE:CLR_PURPLE_DIM,CLR_TXT_WHITE,"DIAGNOSTICO"); PButton("btn_min",rx-110,cur+5,18,17,g_Minimized?"v":"^",CLR_BG_CARD,CLR_TXT_LABEL,"Min/Max"); cur+=50;
+   PButton("btn_config",pill_x,cur+26,pill_w,17,g_ShowConfigPanel?"[X CONFIG]":"⚙ CONFIG",g_ShowConfigPanel?CLR_BLUE:CLR_BLUE_DIM,CLR_TXT_WHITE,"CONTROLE MASTER"); PButton("btn_diag",rx-42,cur+5,20,17,g_ShowDiag?"X":"[?]",g_ShowDiag?CLR_PURPLE:CLR_PURPLE_DIM,CLR_TXT_WHITE,"DIAGNOSTICO"); PButton("btn_min",rx-20,cur+5,18,17,g_Minimized?"v":"^",CLR_BG_CARD,CLR_TXT_LABEL,"Min/Max"); cur+=50;
 
    // [H4 FIX] Garantir subjanela 0 explícita para deleção de objetos em modo minimizado
    if(g_Minimized) { for(int i=ObjectsTotal(0,0,0)-1;i>=0;i--) { string nm=ObjectName(0,i,0,0); if(StringFind(nm,PANEL_PREFIX)==0&&nm!=PANEL_PREFIX+"border"&&nm!=PANEL_PREFIX+"bg_main"&&nm!=PANEL_PREFIX+"hdr_bg"&&nm!=PANEL_PREFIX+"hdr_top"&&StringFind(nm,PANEL_PREFIX+"hdr_")<0&&nm!=PANEL_PREFIX+"btn_min") ObjectDelete(0,nm); } g_PanelHeight=cur-py; ObjectSetInteger(0,PANEL_PREFIX+"border",OBJPROP_YSIZE,g_PanelHeight+2); ObjectSetInteger(0,PANEL_PREFIX+"bg_main",OBJPROP_YSIZE,g_PanelHeight); return; }
@@ -2103,24 +2108,168 @@ void DesenharPainelDiag() {
    s_diag_h=cur-dpy; ObjectSetInteger(0,DP+"border",OBJPROP_YSIZE,s_diag_h+2); ObjectSetInteger(0,DP+"bg",OBJPROP_YSIZE,s_diag_h);
 }
 
-void OnChartEvent(const int id, const long &lparam, const double &dparam, const string &sparam) {
-   if(id == CHARTEVENT_OBJECT_CLICK) {
-      string btn=sparam;
-      if(btn==PANEL_PREFIX+"btn_min")       { g_Minimized=!g_Minimized; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); }
-      else if(btn==PANEL_PREFIX+"btn_pause"){ g_BotPaused=!g_BotPaused; ObjectSetInteger(0,btn,OBJPROP_STATE,false); AddLog(g_BotPaused?"PAUSADO.":"RETOMADO."); g_PanelHash=""; DesenharPainel(); }
-      else if(btn==PANEL_PREFIX+"btn_zerar"){ ObjectSetInteger(0,btn,OBJPROP_STATE,false); if(MessageBox("Zerar TODAS as posições do robô?","Confirmação",MB_YESNO|MB_ICONWARNING)==IDYES){FecharTodasPosicoesDoRobo();AddLog("PANICO: zeradas!");} g_PanelHash=""; DesenharPainel(); }
-      else if(btn==PANEL_PREFIX+"btn_leg_fl"){ g_ViewFluxo=!g_ViewFluxo; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharLinhasChart(); }
-      else if(btn==PANEL_PREFIX+"btn_leg_fr"){ g_ViewFR=!g_ViewFR;    ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharLinhasChart(); }
-      else if(btn==PANEL_PREFIX+"btn_leg_fb"){ g_ViewFibo=!g_ViewFibo; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharLinhasChart(); }
-      else if(btn==PANEL_PREFIX+"btn_leg_zn"){ g_ViewZonas=!g_ViewZonas; g_ModoAnalise=g_ViewZonas; if(!g_ModoAnalise) LimparTudoAnalise(); ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; LimparGrafico(); DesenharPainel(); DesenharLinhasChart(); }
-      else if(btn==PANEL_PREFIX+"btn_l0")   { g_LinhasModo=0; ObjectSetInteger(0,btn,OBJPROP_STATE,false); LimparGrafico(); DesenharLinhasChart(); g_PanelHash=""; DesenharPainel(); }
-      else if(btn==PANEL_PREFIX+"btn_l1")   { g_LinhasModo=1; ObjectSetInteger(0,btn,OBJPROP_STATE,false); LimparGrafico(); DesenharLinhasChart(); g_PanelHash=""; DesenharPainel(); }
-      else if(btn==PANEL_PREFIX+"btn_l2")   { g_LinhasModo=2; ObjectSetInteger(0,btn,OBJPROP_STATE,false); LimparGrafico(); DesenharLinhasChart(); g_PanelHash=""; DesenharPainel(); }
-      else if(btn==PANEL_PREFIX+"btn_confl"){ g_ModoConfluencia++; if(g_ModoConfluencia>4) g_ModoConfluencia=0; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); }
-      else if(btn==PANEL_PREFIX+"btn_col_pos") { g_ColPosicao=!g_ColPosicao; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); }
-      else if(btn==PANEL_PREFIX+"btn_col_term"){ g_ColTerminal=!g_ColTerminal; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); }
-      else if(btn==PANEL_PREFIX+"btn_toggle_prop"||btn=="FS_PROP_HUD_BTN_CLOSE"){ g_ShowPropFirmHUD=(btn==PANEL_PREFIX+"btn_toggle_prop")?!g_ShowPropFirmHUD:false; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharPainelPropFirm(); }
-      else if(btn==PANEL_PREFIX+"btn_diag"||btn==PANEL_PREFIX+"D_btn_close"){ g_ShowDiag=(btn==PANEL_PREFIX+"btn_diag")?!g_ShowDiag:false; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharPainelDiag(); }
+void DesenharPainelConfig() {
+   string CP = PANEL_PREFIX + "CFG_";
+   if(!g_ShowConfigPanel) {
+      ObjectDelete(0, CP + "border"); ObjectDelete(0, CP + "bg");
+      ObjectDelete(0, CP + "hdr_bg"); ObjectDelete(0, CP + "hdr_ttl"); ObjectDelete(0, CP + "btn_close");
+      string btns[] = {
+         "tf_m15","tf_h1","tf_h2","tf_h4",
+         "pf_cons","pf_mod","pf_agr",
+         "confl_0","confl_1","confl_2","confl_3","confl_4",
+         "risk_04","risk_06","risk_10"
+      };
+      for(int i=0; i<ArraySize(btns); i++) ObjectDelete(0, CP + "btn_" + btns[i]);
+      for(int i=1; i<=4; i++) ObjectDelete(0, CP + "lbl_" + IntegerToString(i));
+      return;
+   }
+
+   int cpx = InpPanelX + PANEL_W + 8;
+   int cpy = InpPanelY;
+   int cpw = 270;
+   int ccx = cpx + cpw / 2;
+   int crx = cpx + cpw - 8;
+   int cur = cpy;
+   int panel_h = 205;
+
+   string bdr = CP + "border", bg = CP + "bg";
+   if(ObjectFind(0, bdr) < 0) ObjectCreate(0, bdr, OBJ_RECTANGLE_LABEL, 0, 0, 0);
+   ObjectSetInteger(0, bdr, OBJPROP_XDISTANCE, cpx - 1); ObjectSetInteger(0, bdr, OBJPROP_YDISTANCE, cpy - 1);
+   ObjectSetInteger(0, bdr, OBJPROP_XSIZE, cpw + 2);     ObjectSetInteger(0, bdr, OBJPROP_YSIZE, panel_h + 2);
+   ObjectSetInteger(0, bdr, OBJPROP_BGCOLOR, CLR_LINE_HARD); ObjectSetInteger(0, bdr, OBJPROP_COLOR, CLR_BLUE);
+   ObjectSetInteger(0, bdr, OBJPROP_BORDER_TYPE, BORDER_FLAT); ObjectSetInteger(0, bdr, OBJPROP_CORNER, CORNER_LEFT_UPPER);
+   ObjectSetInteger(0, bdr, OBJPROP_ZORDER, 197);
+
+   if(ObjectFind(0, bg) < 0) ObjectCreate(0, bg, OBJ_RECTANGLE_LABEL, 0, 0, 0);
+   ObjectSetInteger(0, bg, OBJPROP_XDISTANCE, cpx); ObjectSetInteger(0, bg, OBJPROP_YDISTANCE, cpy);
+   ObjectSetInteger(0, bg, OBJPROP_XSIZE, cpw);      ObjectSetInteger(0, bg, OBJPROP_YSIZE, panel_h);
+   ObjectSetInteger(0, bg, OBJPROP_BGCOLOR, CLR_BG_BASE); ObjectSetInteger(0, bg, OBJPROP_COLOR, CLR_BG_BASE);
+   ObjectSetInteger(0, bg, OBJPROP_BORDER_TYPE, BORDER_FLAT); ObjectSetInteger(0, bg, OBJPROP_CORNER, CORNER_LEFT_UPPER);
+   ObjectSetInteger(0, bg, OBJPROP_ZORDER, 198);
+
+   string hbg = CP + "hdr_bg", httl = CP + "hdr_ttl", hclose = CP + "btn_close";
+   if(ObjectFind(0, hbg) < 0) ObjectCreate(0, hbg, OBJ_RECTANGLE_LABEL, 0, 0, 0);
+   ObjectSetInteger(0, hbg, OBJPROP_XDISTANCE, cpx); ObjectSetInteger(0, hbg, OBJPROP_YDISTANCE, cpy);
+   ObjectSetInteger(0, hbg, OBJPROP_XSIZE, cpw);     ObjectSetInteger(0, hbg, OBJPROP_YSIZE, 22);
+   ObjectSetInteger(0, hbg, OBJPROP_BGCOLOR, CLR_BG_HEADER); ObjectSetInteger(0, hbg, OBJPROP_COLOR, CLR_BLUE);
+   ObjectSetInteger(0, hbg, OBJPROP_ZORDER, 199);
+
+   if(ObjectFind(0, httl) < 0) ObjectCreate(0, httl, OBJ_LABEL, 0, 0, 0);
+   ObjectSetInteger(0, httl, OBJPROP_XDISTANCE, ccx); ObjectSetInteger(0, httl, OBJPROP_YDISTANCE, cur + 3);
+   ObjectSetString(0, httl, OBJPROP_TEXT, "⚙ CONTROLE MASTER OPERACIONAL");
+   ObjectSetInteger(0, httl, OBJPROP_COLOR, CLR_TXT_WHITE); ObjectSetString(0, httl, OBJPROP_FONT, "Arial Bold");
+   ObjectSetInteger(0, httl, OBJPROP_FONTSIZE, 9); ObjectSetInteger(0, httl, OBJPROP_ANCHOR, ANCHOR_UPPER);
+   ObjectSetInteger(0, httl, OBJPROP_ZORDER, 260);
+
+   if(ObjectFind(0, hclose) < 0) ObjectCreate(0, hclose, OBJ_BUTTON, 0, 0, 0);
+   ObjectSetInteger(0, hclose, OBJPROP_XDISTANCE, crx - 14); ObjectSetInteger(0, hclose, OBJPROP_YDISTANCE, cur + 3);
+   ObjectSetInteger(0, hclose, OBJPROP_XSIZE, 16);           ObjectSetInteger(0, hclose, OBJPROP_YSIZE, 16);
+   ObjectSetString(0, hclose, OBJPROP_TEXT, "✕");            ObjectSetInteger(0, hclose, OBJPROP_BGCOLOR, CLR_BG_HEADER);
+   ObjectSetInteger(0, hclose, OBJPROP_COLOR, CLR_TXT_LABEL);ObjectSetInteger(0, hclose, OBJPROP_BORDER_COLOR, CLR_LINE_HARD);
+   ObjectSetInteger(0, hclose, OBJPROP_ZORDER, 310);
+
+   cur += 28;
+
+   #define CFG_BTN(id_, x_, y_, w_, h_, txt_, act_, clr_act_) { \
+      string _n = CP + "btn_" + id_; \
+      if(ObjectFind(0, _n) < 0) ObjectCreate(0, _n, OBJ_BUTTON, 0, 0, 0); \
+      ObjectSetInteger(0, _n, OBJPROP_XDISTANCE, x_); ObjectSetInteger(0, _n, OBJPROP_YDISTANCE, y_); \
+      ObjectSetInteger(0, _n, OBJPROP_XSIZE, w_);     ObjectSetInteger(0, _n, OBJPROP_YSIZE, h_); \
+      ObjectSetString(0, _n, OBJPROP_TEXT, txt_); \
+      ObjectSetInteger(0, _n, OBJPROP_BGCOLOR, (act_) ? clr_act_ : CLR_BG_BTN); \
+      ObjectSetInteger(0, _n, OBJPROP_COLOR, (act_) ? CLR_TXT_WHITE : CLR_TXT_LABEL); \
+      ObjectSetInteger(0, _n, OBJPROP_BORDER_COLOR, (act_) ? clr_act_ : CLR_LINE_HARD); \
+      ObjectSetString(0, _n, OBJPROP_FONT, "Arial Bold"); ObjectSetInteger(0, _n, OBJPROP_FONTSIZE, 8); \
+      ObjectSetInteger(0, _n, OBJPROP_CORNER, CORNER_LEFT_UPPER); ObjectSetInteger(0, _n, OBJPROP_SELECTABLE, false); \
+      ObjectSetInteger(0, _n, OBJPROP_HIDDEN, true); ObjectSetInteger(0, _n, OBJPROP_ZORDER, 300); \
+   }
+
+   #define CFG_LBLC(id_, y_, txt_, clr_) { \
+      string _n = CP + "lbl_" + id_; \
+      if(ObjectFind(0, _n) < 0) ObjectCreate(0, _n, OBJ_LABEL, 0, 0, 0); \
+      ObjectSetInteger(0, _n, OBJPROP_XDISTANCE, ccx); ObjectSetInteger(0, _n, OBJPROP_YDISTANCE, y_); \
+      ObjectSetString(0, _n, OBJPROP_TEXT, txt_); ObjectSetInteger(0, _n, OBJPROP_COLOR, clr_); \
+      ObjectSetString(0, _n, OBJPROP_FONT, "Arial Bold"); ObjectSetInteger(0, _n, OBJPROP_FONTSIZE, 8); \
+      ObjectSetInteger(0, _n, OBJPROP_CORNER, CORNER_LEFT_UPPER); ObjectSetInteger(0, _n, OBJPROP_ANCHOR, ANCHOR_UPPER); \
+      ObjectSetInteger(0, _n, OBJPROP_ZORDER, 260); \
+   }
+
+   // 1. SEÇÃO TIMEFRAME EXECUÇÃO
+   CFG_LBLC("1", cur, "⏱ TIMEFRAME EXECUÇÃO", CLR_TXT_PRIMARY); cur += 15;
+   int bw4 = 58, bx4 = cpx + (cpw - (4 * 58 + 3 * 4)) / 2;
+   CFG_BTN("tf_m15", bx4,              cur, bw4, 20, "M15", g_TF_L1 == PERIOD_M15, CLR_TEAL);
+   CFG_BTN("tf_h1",  bx4 + bw4 + 4,     cur, bw4, 20, "H1",  g_TF_L1 == PERIOD_H1,  CLR_TEAL);
+   CFG_BTN("tf_h2",  bx4 + (bw4+4)*2,   cur, bw4, 20, "H2",  g_TF_L1 == PERIOD_H2,  CLR_TEAL);
+   CFG_BTN("tf_h4",  bx4 + (bw4+4)*3,   cur, bw4, 20, "H4",  g_TF_L1 == PERIOD_H4,  CLR_TEAL);
+   cur += 25;
+
+   // 2. SEÇÃO PERFIL OPERACIONAL
+   CFG_LBLC("2", cur, "🛡 PERFIL OPERACIONAL", CLR_TXT_PRIMARY); cur += 15;
+   int bw3 = 80, bx3 = cpx + (cpw - (3 * 80 + 2 * 4)) / 2;
+   CFG_BTN("pf_cons", bx3,              cur, bw3, 20, "CONSERV",  g_CurrentPerfil == PERFIL_CONSERVADOR, CLR_BLUE);
+   CFG_BTN("pf_mod",  bx3 + bw3 + 4,     cur, bw3, 20, "MODERADO", g_CurrentPerfil == PERFIL_MODERADO,    CLR_BLUE);
+   CFG_BTN("pf_agr",  bx3 + (bw3+4)*2,   cur, bw3, 20, "AGRESSIVO",g_CurrentPerfil == PERFIL_AGRESSIVO,   CLR_AMBER);
+   cur += 25;
+
+   // 3. SEÇÃO CONFLUÊNCIA MARKETGLANCE
+   CFG_LBLC("3", cur, "🔍 FILTRO CONFLUÊNCIA", CLR_TXT_PRIMARY); cur += 15;
+   int bw5 = 46, bx5 = cpx + (cpw - (5 * 46 + 4 * 4)) / 2;
+   CFG_BTN("confl_0", bx5,              cur, bw5, 20, "OFF", g_ModoConfluencia == 0, CLR_RED);
+   CFG_BTN("confl_1", bx5 + bw5 + 4,     cur, bw5, 20, "M15", g_ModoConfluencia == 1, CLR_PURPLE);
+   CFG_BTN("confl_2", bx5 + (bw5+4)*2,   cur, bw5, 20, "H1",  g_ModoConfluencia == 2, CLR_PURPLE);
+   CFG_BTN("confl_3", bx5 + (bw5+4)*3,   cur, bw5, 20, "H2",  g_ModoConfluencia == 3, CLR_PURPLE);
+   CFG_BTN("confl_4", bx5 + (bw5+4)*4,   cur, bw5, 20, "H4",  g_ModoConfluencia == 4, CLR_PURPLE);
+   cur += 25;
+
+   // 4. SEÇÃO RISCO PROP FIRM
+   CFG_LBLC("4", cur, "📐 RISCO PROP FIRM POR TRADE", CLR_TXT_PRIMARY); cur += 15;
+   CFG_BTN("risk_04", bx3,              cur, bw3, 20, "0.4%", g_PropMaxRiskPct == 0.4, CLR_AMBER);
+   CFG_BTN("risk_06", bx3 + bw3 + 4,     cur, bw3, 20, "0.6%", g_PropMaxRiskPct == 0.6, CLR_AMBER);
+   CFG_BTN("risk_10", bx3 + (bw3+4)*2,   cur, bw3, 20, "1.0%", g_PropMaxRiskPct == 1.0, CLR_AMBER);
+   cur += 25;
+
+   panel_h = cur - cpy + 6;
+   ObjectSetInteger(0, bdr, OBJPROP_YSIZE, panel_h + 2);
+   ObjectSetInteger(0, bg,  OBJPROP_YSIZE, panel_h);
+
+   #undef CFG_BTN
+   #undef CFG_LBLC
+}
+
+ void OnChartEvent(const int id, const long &lparam, const double &dparam, const string &sparam) {
+    if(id == CHARTEVENT_OBJECT_CLICK) {
+       string btn=sparam;
+       if(btn==PANEL_PREFIX+"btn_min")       { g_Minimized=!g_Minimized; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); }
+       else if(btn==PANEL_PREFIX+"btn_pause"){ g_BotPaused=!g_BotPaused; ObjectSetInteger(0,btn,OBJPROP_STATE,false); AddLog(g_BotPaused?"PAUSADO.":"RETOMADO."); g_PanelHash=""; DesenharPainel(); }
+       else if(btn==PANEL_PREFIX+"btn_zerar"){ ObjectSetInteger(0,btn,OBJPROP_STATE,false); if(MessageBox("Zerar TODAS as posições do robô?","Confirmação",MB_YESNO|MB_ICONWARNING)==IDYES){FecharTodasPosicoesDoRobo();AddLog("PANICO: zeradas!");} g_PanelHash=""; DesenharPainel(); }
+       else if(btn==PANEL_PREFIX+"btn_leg_fl"){ g_ViewFluxo=!g_ViewFluxo; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharLinhasChart(); }
+       else if(btn==PANEL_PREFIX+"btn_leg_fr"){ g_ViewFR=!g_ViewFR;    ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharLinhasChart(); }
+       else if(btn==PANEL_PREFIX+"btn_leg_fb"){ g_ViewFibo=!g_ViewFibo; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharLinhasChart(); }
+       else if(btn==PANEL_PREFIX+"btn_leg_zn"){ g_ViewZonas=!g_ViewZonas; g_ModoAnalise=g_ViewZonas; if(!g_ModoAnalise) LimparTudoAnalise(); ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; LimparGrafico(); DesenharPainel(); DesenharLinhasChart(); }
+       else if(btn==PANEL_PREFIX+"btn_l0")   { g_LinhasModo=0; ObjectSetInteger(0,btn,OBJPROP_STATE,false); LimparGrafico(); DesenharLinhasChart(); g_PanelHash=""; DesenharPainel(); }
+       else if(btn==PANEL_PREFIX+"btn_l1")   { g_LinhasModo=1; ObjectSetInteger(0,btn,OBJPROP_STATE,false); LimparGrafico(); DesenharLinhasChart(); g_PanelHash=""; DesenharPainel(); }
+       else if(btn==PANEL_PREFIX+"btn_l2")   { g_LinhasModo=2; ObjectSetInteger(0,btn,OBJPROP_STATE,false); LimparGrafico(); DesenharLinhasChart(); g_PanelHash=""; DesenharPainel(); }
+       else if(btn==PANEL_PREFIX+"btn_confl"){ g_ModoConfluencia++; if(g_ModoConfluencia>4) g_ModoConfluencia=0; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
+       else if(btn==PANEL_PREFIX+"btn_col_pos") { g_ColPosicao=!g_ColPosicao; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); }
+       else if(btn==PANEL_PREFIX+"btn_col_term"){ g_ColTerminal=!g_ColTerminal; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); }
+       else if(btn==PANEL_PREFIX+"btn_toggle_prop"||btn=="FS_PROP_HUD_BTN_CLOSE"){ g_ShowPropFirmHUD=(btn==PANEL_PREFIX+"btn_toggle_prop")?!g_ShowPropFirmHUD:false; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharPainelPropFirm(); }
+       else if(btn==PANEL_PREFIX+"btn_diag"||btn==PANEL_PREFIX+"D_btn_close"){ g_ShowDiag=(btn==PANEL_PREFIX+"btn_diag")?!g_ShowDiag:false; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharPainelDiag(); }
+       else if(btn==PANEL_PREFIX+"btn_config"||btn==PANEL_PREFIX+"CFG_btn_close"){ g_ShowConfigPanel=(btn==PANEL_PREFIX+"btn_config")?!g_ShowConfigPanel:false; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
+       else if(btn==PANEL_PREFIX+"CFG_btn_tf_m15"){ g_TF_L1=PERIOD_M15; TF_L2=(g_TF_L1<=PERIOD_H2)?PERIOD_H4:PERIOD_D1; g_AutoTF=false; InicializarHandles(); AplicarPerfil(g_CurrentPerfil); g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); DesenharLinhasChart(); }
+       else if(btn==PANEL_PREFIX+"CFG_btn_tf_h1") { g_TF_L1=PERIOD_H1;  TF_L2=(g_TF_L1<=PERIOD_H2)?PERIOD_H4:PERIOD_D1; g_AutoTF=false; InicializarHandles(); AplicarPerfil(g_CurrentPerfil); g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); DesenharLinhasChart(); }
+       else if(btn==PANEL_PREFIX+"CFG_btn_tf_h2") { g_TF_L1=PERIOD_H2;  TF_L2=(g_TF_L1<=PERIOD_H2)?PERIOD_H4:PERIOD_D1; g_AutoTF=false; InicializarHandles(); AplicarPerfil(g_CurrentPerfil); g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); DesenharLinhasChart(); }
+       else if(btn==PANEL_PREFIX+"CFG_btn_tf_h4") { g_TF_L1=PERIOD_H4;  TF_L2=(g_TF_L1<=PERIOD_H2)?PERIOD_H4:PERIOD_D1; g_AutoTF=false; InicializarHandles(); AplicarPerfil(g_CurrentPerfil); g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); DesenharLinhasChart(); }
+       else if(btn==PANEL_PREFIX+"CFG_btn_pf_cons"){ g_CurrentPerfil=PERFIL_CONSERVADOR; AplicarPerfil(PERFIL_CONSERVADOR); g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
+       else if(btn==PANEL_PREFIX+"CFG_btn_pf_mod") { g_CurrentPerfil=PERFIL_MODERADO;    AplicarPerfil(PERFIL_MODERADO);    g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
+       else if(btn==PANEL_PREFIX+"CFG_btn_pf_agr") { g_CurrentPerfil=PERFIL_AGRESSIVO;   AplicarPerfil(PERFIL_AGRESSIVO);   g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
+       else if(btn==PANEL_PREFIX+"CFG_btn_confl_0"){ g_ModoConfluencia=0; g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
+       else if(btn==PANEL_PREFIX+"CFG_btn_confl_1"){ g_ModoConfluencia=1; g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
+       else if(btn==PANEL_PREFIX+"CFG_btn_confl_2"){ g_ModoConfluencia=2; g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
+       else if(btn==PANEL_PREFIX+"CFG_btn_confl_3"){ g_ModoConfluencia=3; g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
+       else if(btn==PANEL_PREFIX+"CFG_btn_confl_4"){ g_ModoConfluencia=4; g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
+       else if(btn==PANEL_PREFIX+"CFG_btn_risk_04"){ g_PropMaxRiskPct=0.4; g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
+       else if(btn==PANEL_PREFIX+"CFG_btn_risk_06"){ g_PropMaxRiskPct=0.6; g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
+       else if(btn==PANEL_PREFIX+"CFG_btn_risk_10"){ g_PropMaxRiskPct=1.0; g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
       else if(btn==PANEL_PREFIX+"D_btn_tab_fl"){ ObjectDelete(0,btn); }
       else if(btn==PANEL_PREFIX+"D_btn_tab_fr"){ g_DiagTab=1; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainelDiag(); }
       else if(btn==PANEL_PREFIX+"D_btn_tab_fb"){ g_DiagTab=2; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainelDiag(); }
@@ -2232,8 +2381,10 @@ int OnInit() {
    for(int i=0;i<ArraySize(old_flt);i++) ObjectDelete(0,PANEL_PREFIX+old_flt[i]);
    ObjectDelete(0, PANEL_PREFIX+"R_hdr_stat");
 
-   g_CurrentPerfil = InpPerfil;
-   g_InitTime      = TimeCurrent();
+   g_CurrentPerfil   = InpPerfil;
+   g_AutoTF          = InpAutoTF;
+   g_PropMaxRiskPct  = InpPropMaxRiskPct;
+   g_InitTime        = TimeCurrent();
    g_GV_Blocked    = "Sniper_Blocked_" + _Symbol;
 
    trade.SetExpertMagicNumber(InpMagic);
@@ -2243,7 +2394,8 @@ int OnInit() {
    // [AUTO-TF] Detecta símbolo e configura g_TF_L1 / TF_L2 automaticamente
    AutoSelecionarTF();
 
-   if(GlobalVariableCheck("FS9_ModoConfl")) g_ModoConfluencia = (int)GlobalVariableGet("FS9_ModoConfl");
+   // Garante sincronia inicial do Confl com o TF de execução (g_TF_L1)
+   GlobalVariableSet("FS9_ModoConfl", g_ModoConfluencia);
 
    if(!InicializarHandles()) { Print("INIT FAILED: Handles base inválidos."); return INIT_FAILED; }
    AplicarPerfil(g_CurrentPerfil);
@@ -2900,14 +3052,16 @@ void OnTick() {
          return;
       }
       if(g_FastNPos >= InpPropMaxPos) return;
+      double max_daily_consistency_profit = _bal * (InpPropFase1TargetPct / 100.0) * (InpPropConsistencyPct / 100.0); // Ex: $10,000 * 10% * 35% = $350 USD
       double total_earned = _bal - g_StartBalance;
-      // [BUG-05 FIX] Incluir P&L flutuante no cálculo de consistência
-      // Antes: usava g_CachedPlTotReal (só fechadas) → robô podia ser pausado prematuramente
-      // em dias onde há posições abertas no lucro. Agora usa o P&L total real do dia.
       double pl_total_hoje = g_CachedPlTotReal + g_FloatingPlTot;
-      g_ConsistencyPct = (total_earned>0 && pl_total_hoje>0) ? (pl_total_hoje/total_earned*100.0) : 0.0;
-      if(g_ConsistencyPct > InpPropConsistencyPct) {
-         if(!g_BotPaused){ g_BotPaused=true; AddLog(StringFormat("⛔ PROP: Consistência %.1f%% > %.1f%% — pausado!",g_ConsistencyPct,InpPropConsistencyPct)); }
+
+      // Cálculo de consistência imune a falsos positivos com lucros irrisórios (< $100 USD)
+      g_ConsistencyPct = (total_earned >= 100.0 && pl_total_hoje > 0) ? (pl_total_hoje / total_earned * 100.0) : ((pl_total_hoje > 0 && max_daily_consistency_profit > 0) ? (pl_total_hoje / max_daily_consistency_profit * 100.0) : 0.0);
+
+      // Trava APENAS se o lucro do dia atingir o teto real da mesa ($350 USD em 10k) ou ferir a consistência acumulada
+      if(pl_total_hoje >= max_daily_consistency_profit || (total_earned >= 100.0 && g_ConsistencyPct > InpPropConsistencyPct)) {
+         if(!g_BotPaused){ g_BotPaused=true; AddLog(StringFormat("⛔ PROP: Teto Diário de Consistência atingido (%.2f USD >= %.2f USD) — pausado para proteger a aprovação!", pl_total_hoje, max_daily_consistency_profit)); }
          return;
       }
    }
@@ -3055,11 +3209,11 @@ void OnTick() {
                double d_zone=g_CachedATR*(InpFR_Direct_ZoneATRPct/100.0);
                bool dr_s_ok=(!InpFR_Direct_IgnoreFiltros&&InpFR_UseRSI)?(g_CachedRSI>=r_th_sell):true;
                bool dr_b_ok=(!InpFR_Direct_IgnoreFiltros&&InpFR_UseRSI)?(g_CachedRSI<=r_th_buy):true;
-               if(confl_s_ok && (iHigh(_Symbol,g_TF_L1,0)>pH&&bid<pH&&bid>=(pH-d_zone))&&(bid<iOpen(_Symbol,g_TF_L1,0))&&cb_l1!=l1_frd_sell&&z_v&&dr_s_ok){
+               if(confl_s_ok && tc_sell && (iHigh(_Symbol,g_TF_L1,0)>pH&&bid<pH&&bid>=(pH-d_zone))&&(bid<iOpen(_Symbol,g_TF_L1,0))&&cb_l1!=l1_frd_sell&&z_v&&dr_s_ok){
                   datetime prev_sell=l1_frd_sell; l1_frd_sell=cb_l1;
                   if(!AbrirSell(lot,bid,sl_pts,tp1_m,InpTP_Final_Multi,"FR_Dir_V_L1")) l1_frd_sell=prev_sell; else l1_fr_sell_ts=TimeCurrent();
                }
-               if(confl_b_ok && (iLow(_Symbol,g_TF_L1,0)<pL&&ask>pL&&ask<=(pL+d_zone))&&(ask>iOpen(_Symbol,g_TF_L1,0))&&cb_l1!=l1_frd_buy&&z_c&&dr_b_ok){
+               if(confl_b_ok && tc_buy && (iLow(_Symbol,g_TF_L1,0)<pL&&ask>pL&&ask<=(pL+d_zone))&&(ask>iOpen(_Symbol,g_TF_L1,0))&&cb_l1!=l1_frd_buy&&z_c&&dr_b_ok){
                   datetime prev_buy=l1_frd_buy; l1_frd_buy=cb_l1;
                   if(!AbrirBuy(lot,ask,sl_pts,tp1_m,InpTP_Final_Multi,"FR_Dir_C_L1")) l1_frd_buy=prev_buy; else l1_fr_buy_ts=TimeCurrent();
                }
@@ -3089,7 +3243,7 @@ void OnTick() {
          }
          
          double pH=l2_top, pL=l2_bot;
-         double mag_tol=GetFR_MagTol(l2_atr,l2_adx);
+         double mag_tol=GetFR_MagTol(l2_atr,l2_adx,TF_L2);
          double fr_range=(pH-pL)/_Point, tp1_m=InpTP_Parcial_Multi;
          if(l2_sl>0&&fr_range>=l2_sl*0.5) tp1_m=CalcularTP_Estrutural(fr_range,l2_sl,InpTP_Min_Multi,InpTP_Max_Multi,InpTP_Parcial_Multi);
          bool m_sell=InpFR_RequireWickRejection?(iHigh(_Symbol,TF_L2,1)>pH&&iClose(_Symbol,TF_L2,1)<pH&&IsVelaReversaoVenda(1,TF_L2)):(iHigh(_Symbol,TF_L2,1)>pH&&iClose(_Symbol,TF_L2,1)<pH&&iClose(_Symbol,TF_L2,1)<iOpen(_Symbol,TF_L2,1));
