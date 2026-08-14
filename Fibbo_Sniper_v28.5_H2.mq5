@@ -2719,11 +2719,33 @@ void DesenharPainelPropFirm() {
    double freeMargin = AccountInfoDouble(ACCOUNT_MARGIN_FREE);
    double freeMarginPct = (bal > 0) ? (freeMargin / bal * 100.0) : 0;
    
+   // Watermark & High Peak Tracking (Sincronização 100% com Blue Guardian Dashboard)
+   string g_GV_HWM = "Sniper_HWM_" + IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN));
+   string g_GV_MXP = "Sniper_MXP_" + IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN));
+   
+   double hwm = GlobalVariableCheck(g_GV_HWM) ? GlobalVariableGet(g_GV_HWM) : MathMax(g_StartBalance, MathMax(bal, eq));
+   if(MathMax(bal, eq) > hwm) {
+      hwm = MathMax(bal, eq);
+      GlobalVariableSet(g_GV_HWM, hwm);
+   }
+   
    double maxDDUsd = (g_StartBalance > 0) ? (g_StartBalance - eq) : 0;
    if(maxDDUsd < 0) maxDDUsd = 0;
    double maxDDPct = (bal > 0) ? (maxDDUsd / bal * 100.0) : 0;
-   double distMaxLossUsd = (bal * (InpPropFirmMaxDDLimitPct / 100.0)) - maxDDUsd;
-   double distMaxLossPct = (bal > 0) ? (distMaxLossUsd / bal * 100.0) : 0;
+   
+   double ddFromPeakUsd = hwm - eq;
+   if(ddFromPeakUsd < 0) ddFromPeakUsd = 0;
+   
+   double maxDDPeakUsd = GlobalVariableCheck(g_GV_MXP) ? GlobalVariableGet(g_GV_MXP) : ddFromPeakUsd;
+   if(ddFromPeakUsd > maxDDPeakUsd) {
+      maxDDPeakUsd = ddFromPeakUsd;
+      GlobalVariableSet(g_GV_MXP, maxDDPeakUsd);
+   }
+   double maxDDPeakPct = (hwm > 0) ? (maxDDPeakUsd / hwm * 100.0) : 0;
+   
+   double distMaxLossUsd = (g_StartBalance * (InpPropFirmMaxDDLimitPct / 100.0)) - maxDDPeakUsd;
+   if(distMaxLossUsd < 0) distMaxLossUsd = 0;
+   double distMaxLossPct = (g_StartBalance > 0) ? (distMaxLossUsd / g_StartBalance * 100.0) : 0;
    
    double totalProfitUsd = bal - g_StartBalance;
    double fase1TargetUsd = g_StartBalance * (InpPropFase1TargetPct / 100.0);
@@ -2907,13 +2929,13 @@ void DesenharPainelPropFirm() {
    ObjectSetString(0, s2_txt, OBJPROP_TEXT, StringFormat("DRAWDOWN TOTAL (%.1f%% MAX MESA)", InpPropFirmMaxDDLimitPct));
    
    cur_y += 22;
-   // Drawdown Atual Fibbo
+   // Drawdown do Pico (High Watermark - Blue Guardian Sincronizado)
    string l5_a = PFX + "L5_A"; string l5_b = PFX + "L5_B";
-   if(ObjectFind(0, l5_a) < 0) { ObjectCreate(0, l5_a, OBJ_LABEL, 0, 0, 0); ObjectSetInteger(0, l5_a, OBJPROP_CORNER, CORNER_LEFT_UPPER); ObjectSetString(0, l5_a, OBJPROP_FONT, "Calibri"); ObjectSetInteger(0, l5_a, OBJPROP_FONTSIZE, 9); ObjectSetInteger(0, l5_a, OBJPROP_COLOR, C'140,150,165'); ObjectSetInteger(0, l5_a, OBJPROP_ZORDER, 12); ObjectSetString(0, l5_a, OBJPROP_TEXT, "Drawdown Atual Fibbo:"); }
-   if(ObjectFind(0, l5_b) < 0) { ObjectCreate(0, l5_b, OBJ_LABEL, 0, 0, 0); ObjectSetInteger(0, l5_b, OBJPROP_CORNER, CORNER_LEFT_UPPER); ObjectSetInteger(0, l5_b, OBJPROP_ANCHOR, ANCHOR_RIGHT_UPPER); ObjectSetString(0, l5_b, OBJPROP_FONT, "Calibri"); ObjectSetInteger(0, l5_b, OBJPROP_FONTSIZE, 9); ObjectSetInteger(0, l5_b, OBJPROP_COLOR, C'100,140,220'); ObjectSetInteger(0, l5_b, OBJPROP_ZORDER, 12); }
+   if(ObjectFind(0, l5_a) < 0) { ObjectCreate(0, l5_a, OBJ_LABEL, 0, 0, 0); ObjectSetInteger(0, l5_a, OBJPROP_CORNER, CORNER_LEFT_UPPER); ObjectSetString(0, l5_a, OBJPROP_FONT, "Calibri"); ObjectSetInteger(0, l5_a, OBJPROP_FONTSIZE, 9); ObjectSetInteger(0, l5_a, OBJPROP_COLOR, C'140,150,165'); ObjectSetInteger(0, l5_a, OBJPROP_ZORDER, 12); ObjectSetString(0, l5_a, OBJPROP_TEXT, "Drawdown Pico (Watermark):"); }
+   if(ObjectFind(0, l5_b) < 0) { ObjectCreate(0, l5_b, OBJ_LABEL, 0, 0, 0); ObjectSetInteger(0, l5_b, OBJPROP_CORNER, CORNER_LEFT_UPPER); ObjectSetInteger(0, l5_b, OBJPROP_ANCHOR, ANCHOR_RIGHT_UPPER); ObjectSetString(0, l5_b, OBJPROP_FONT, "Calibri Bold"); ObjectSetInteger(0, l5_b, OBJPROP_FONTSIZE, 9); ObjectSetInteger(0, l5_b, OBJPROP_COLOR, C'210,68,68'); ObjectSetInteger(0, l5_b, OBJPROP_ZORDER, 12); }
    ObjectSetInteger(0, l5_a, OBJPROP_XDISTANCE, card_x + 16); ObjectSetInteger(0, l5_a, OBJPROP_YDISTANCE, cur_y);
    ObjectSetInteger(0, l5_b, OBJPROP_XDISTANCE, card_x + card_w - 16); ObjectSetInteger(0, l5_b, OBJPROP_YDISTANCE, cur_y);
-   ObjectSetString(0, l5_b, OBJPROP_TEXT, StringFormat("-%.2f USD (-%.2f%%)", maxDDUsd, maxDDPct));
+   ObjectSetString(0, l5_b, OBJPROP_TEXT, StringFormat("-%.2f USD (-%.2f%%)", maxDDPeakUsd, maxDDPeakPct));
    
    cur_y += 16;
    // Distancia p/ Perda Max
