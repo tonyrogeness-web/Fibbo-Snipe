@@ -724,6 +724,7 @@ double   g_ConsistencyPct = 0;                  // [PROP] % do lucro de hoje vs 
 datetime l1_frd_buy = 0, l1_frd_sell = 0, l2_frd_buy = 0, l2_frd_sell = 0;
 datetime l1_flx_buy = 0, l1_flx_sell = 0;
 datetime f_h4_buy = 0, f_h4_sell = 0, f_h4_buy2 = 0, f_h4_sell2 = 0;
+datetime l_fibo_buy_ts = 0, l_fibo_sell_ts = 0; // [COOLDOWN FIBO] Previne overtrading
 
 int g_PanelHeight = 460;
 datetime g_CacheBarTime = 0;
@@ -3389,6 +3390,9 @@ void OnTick() {
    // MOTOR 3: FIBONACCI H4 + D1 SATÉLITE (Auto-Scale)
    //================================================================
    if(InpUseFiboPullback && !block_fibo) {
+      int cooldown_sec = InpFR_CooldownMinutes * 60;
+      bool fibo_cd_buy  = (cooldown_sec <= 0 || (TimeCurrent() - l_fibo_buy_ts >= cooldown_sec));
+      bool fibo_cd_sell = (cooldown_sec <= 0 || (TimeCurrent() - l_fibo_sell_ts >= cooldown_sec));
       // FIBO H4
       if(g_CachedFiboCdOk&&g_CachedFiboH>0&&g_CachedFiboLow>0&&g_CachedFiboATR>0){
          bool v_ok=true; if(InpUseVolumeFilter&&g_CachedVolMed>0){long vb[1];if(CopyTickVolume(_Symbol,g_TF_L1,0,1,vb)>=1)v_ok=((double)vb[0]>g_CachedVolMed);}
@@ -3405,14 +3409,14 @@ void OnTick() {
             }
             g_ReadyFibo=(a_ok&&dso&&v_ok)||(a_ok&&dbo&&v_ok);
             double l_h4 = ComputeLot_ByDistance(sl_f, g_CachedFiboATR);
-            if(a_ok&&dso&&bid<=nSell&&bid>=(nSell-gat_f)&&FiltroCurtoPrazo(-1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_sell&&!JaExistePosicaoDaEstrategia("Fibo_Sell_H4")){if(AbrirSell(l_h4,bid,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Sell_H4"))f_h4_sell=cb_h4;}
-            if(a_ok&&dbo&&ask>=nBuy&&ask<=(nBuy+gat_f)&&FiltroCurtoPrazo(1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_buy&&!JaExistePosicaoDaEstrategia("Fibo_Buy_H4")) {if(AbrirBuy (l_h4,ask,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Buy_H4")) f_h4_buy=cb_h4;}
+            if(a_ok&&dso&&bid<=nSell&&bid>=(nSell-gat_f)&&FiltroCurtoPrazo(-1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_sell&&!JaExistePosicaoDaEstrategia("Fibo_Sell_H4")){if(fibo_cd_sell && AbrirSell(l_h4,bid,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Sell_H4")){ f_h4_sell=cb_h4; l_fibo_sell_ts=TimeCurrent(); }}
+            if(a_ok&&dbo&&ask>=nBuy&&ask<=(nBuy+gat_f)&&FiltroCurtoPrazo(1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_buy&&!JaExistePosicaoDaEstrategia("Fibo_Buy_H4")) {if(fibo_cd_buy && AbrirBuy (l_h4,ask,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Buy_H4")){ f_h4_buy=cb_h4; l_fibo_buy_ts=TimeCurrent(); }}
             // FIBO H4 — NÍVEL 2 (38.2% default, substitui D1)
             if(InpUseFiboH4_2) {
                double nSell2=g_CachedFiboH-range*(InpFibLevel2Sell/100.0), nBuy2=g_CachedFiboLow+range*(InpFibLevel2Buy/100.0);
                double l_h4_2=ComputeLot_ByDistance(sl_f,g_CachedFiboATR);
-               if(a_ok&&dso&&bid<=nSell2&&bid>=(nSell2-gat_f)&&FiltroCurtoPrazo(-1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_sell2&&!JaExistePosicaoDaEstrategia("Fibo_Sell_H4_2")){if(AbrirSell(l_h4_2,bid,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Sell_H4_2"))f_h4_sell2=cb_h4;}
-               if(a_ok&&dbo&&ask>=nBuy2&&ask<=(nBuy2+gat_f)&&FiltroCurtoPrazo(1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_buy2&&!JaExistePosicaoDaEstrategia("Fibo_Buy_H4_2")) {if(AbrirBuy (l_h4_2,ask,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Buy_H4_2")) f_h4_buy2=cb_h4;}
+               if(a_ok&&dso&&bid<=nSell2&&bid>=(nSell2-gat_f)&&FiltroCurtoPrazo(-1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_sell2&&!JaExistePosicaoDaEstrategia("Fibo_Sell_H4_2")){if(fibo_cd_sell && AbrirSell(l_h4_2,bid,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Sell_H4_2")){ f_h4_sell2=cb_h4; l_fibo_sell_ts=TimeCurrent(); }}
+               if(a_ok&&dbo&&ask>=nBuy2&&ask<=(nBuy2+gat_f)&&FiltroCurtoPrazo(1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_buy2&&!JaExistePosicaoDaEstrategia("Fibo_Buy_H4_2")) {if(fibo_cd_buy && AbrirBuy (l_h4_2,ask,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Buy_H4_2")){ f_h4_buy2=cb_h4; l_fibo_buy_ts=TimeCurrent(); }}
             }
          } else g_ReadyFibo=false;
       } else g_ReadyFibo=false;
