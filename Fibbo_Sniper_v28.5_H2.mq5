@@ -1979,8 +1979,8 @@ PRow("reg",lx,rx,cur,"Regime  |  ADX "+DoubleToString(adx_val,1)+" (>="+StringFo
       bool is_ready=(g_ReadyFR||in_rd_fr)&&fr_cd;
       color c_fr_st  = !InpUseFR ? CLR_MUTED : (g_ReadyFR ? C'0,255,136' : (in_rd_fr ? C'255,193,7' : C'255,107,107'));
       string s_fr2   = !InpUseFR ? "OFF" : (g_ReadyFR ? "GATILHO!" : (in_rd_fr ? "ARMADO!" : "MASTER P.A."));
-      color c_fr_ico = CLR_RED; // Barra lateral de acento vermelha
-      color bg_fr    = C'30,10,12'; // [OPÇÃO 1] Fundo Vermelho Vinho Translúcido Suave
+      color c_fr_ico = fr_all_ok ? C'0,230,118' : CLR_RED; // Borda e Acento Verde Neon quando 100% OK (PRONTO), Vermelho se bloqueado
+      color bg_fr    = fr_all_ok ? C'10,30,15' : C'30,10,12'; // Fundo Verde Translúcido quando 100% OK, Vinho quando bloqueado
       color txt_fr   = CLR_TXT_WHITE; // Título em Branco Neve Puro
       
       PModuleCardH("fr_card",ox,cur,cw_fr,ch,c_fr_ico,bg_fr);
