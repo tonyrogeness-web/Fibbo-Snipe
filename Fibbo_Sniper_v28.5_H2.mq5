@@ -3409,14 +3409,14 @@ void OnTick() {
             }
             g_ReadyFibo=(a_ok&&dso&&v_ok)||(a_ok&&dbo&&v_ok);
             double l_h4 = ComputeLot_ByDistance(sl_f, g_CachedFiboATR);
-            if(a_ok&&dso&&bid<=nSell&&bid>=(nSell-gat_f)&&FiltroCurtoPrazo(-1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_sell&&!JaExistePosicaoDaEstrategia("Fibo_Sell_H4")){if(fibo_cd_sell && AbrirSell(l_h4,bid,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Sell_H4")){ f_h4_sell=cb_h4; l_fibo_sell_ts=TimeCurrent(); }}
-            if(a_ok&&dbo&&ask>=nBuy&&ask<=(nBuy+gat_f)&&FiltroCurtoPrazo(1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_buy&&!JaExistePosicaoDaEstrategia("Fibo_Buy_H4")) {if(fibo_cd_buy && AbrirBuy (l_h4,ask,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Buy_H4")){ f_h4_buy=cb_h4; l_fibo_buy_ts=TimeCurrent(); }}
+            if(a_ok&&dso&&MathAbs(bid-nSell)<=gat_f&&FiltroCurtoPrazo(-1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_sell&&!JaExistePosicaoDaEstrategia("Fibo_Sell_H4")){if(fibo_cd_sell && AbrirSell(l_h4,bid,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Sell_H4")){ f_h4_sell=cb_h4; l_fibo_sell_ts=TimeCurrent(); }}
+            if(a_ok&&dbo&&MathAbs(ask-nBuy)<=gat_f&&FiltroCurtoPrazo(1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_buy&&!JaExistePosicaoDaEstrategia("Fibo_Buy_H4")) {if(fibo_cd_buy && AbrirBuy (l_h4,ask,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Buy_H4")){ f_h4_buy=cb_h4; l_fibo_buy_ts=TimeCurrent(); }}
             // FIBO H4 — NÍVEL 2 (38.2% default, substitui D1)
             if(InpUseFiboH4_2) {
                double nSell2=g_CachedFiboH-range*(InpFibLevel2Sell/100.0), nBuy2=g_CachedFiboLow+range*(InpFibLevel2Buy/100.0);
                double l_h4_2=ComputeLot_ByDistance(sl_f,g_CachedFiboATR);
-               if(a_ok&&dso&&bid<=nSell2&&bid>=(nSell2-gat_f)&&FiltroCurtoPrazo(-1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_sell2&&!JaExistePosicaoDaEstrategia("Fibo_Sell_H4_2")){if(fibo_cd_sell && AbrirSell(l_h4_2,bid,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Sell_H4_2")){ f_h4_sell2=cb_h4; l_fibo_sell_ts=TimeCurrent(); }}
-               if(a_ok&&dbo&&ask>=nBuy2&&ask<=(nBuy2+gat_f)&&FiltroCurtoPrazo(1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_buy2&&!JaExistePosicaoDaEstrategia("Fibo_Buy_H4_2")) {if(fibo_cd_buy && AbrirBuy (l_h4_2,ask,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Buy_H4_2")){ f_h4_buy2=cb_h4; l_fibo_buy_ts=TimeCurrent(); }}
+               if(a_ok&&dso&&MathAbs(bid-nSell2)<=gat_f&&FiltroCurtoPrazo(-1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_sell2&&!JaExistePosicaoDaEstrategia("Fibo_Sell_H4_2")){if(fibo_cd_sell && AbrirSell(l_h4_2,bid,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Sell_H4_2")){ f_h4_sell2=cb_h4; l_fibo_sell_ts=TimeCurrent(); }}
+               if(a_ok&&dbo&&MathAbs(ask-nBuy2)<=gat_f&&FiltroCurtoPrazo(1,1,PERIOD_H4,hShortEMA_H4)&&v_ok&&cb_h4!=f_h4_buy2&&!JaExistePosicaoDaEstrategia("Fibo_Buy_H4_2")) {if(fibo_cd_buy && AbrirBuy (l_h4_2,ask,sl_f,InpTP_Parcial_Multi,InpTP_Final_Multi,"Fibo_Buy_H4_2")){ f_h4_buy2=cb_h4; l_fibo_buy_ts=TimeCurrent(); }}
             }
          } else g_ReadyFibo=false;
       } else g_ReadyFibo=false;
