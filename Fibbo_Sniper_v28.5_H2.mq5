@@ -1,4 +1,4 @@
-//+------------------------------------------------------------------+
+﻿//+------------------------------------------------------------------+
 //|  Fibbo_Sniper_v28.5_PRO.mq5                                     |
 //|  Estratégia: Falso Rompimento + Pullback Fibo + Rompimento Vol   |
 //|  Modo: UNIFICADO — Conservador / Moderado / Agressivo            |
@@ -291,6 +291,33 @@ void DesenharLegendaAnaliseMG(int count, string &texts[], color &clrs[], string 
 //===================================================================
 // 4. DESENHO PRINCIPAL DAS LINHAS E CANAIS
 //===================================================================
+
+//+------------------------------------------------------------------+
+//| [ROTEAMENTO INTELIGENTE] Verifica se Fibo é permitida no par     |
+//+------------------------------------------------------------------+
+bool IsFiboActiveForSymbol() {
+   if(!InpUseFiboPullback) return false;
+   if(!InpSmartFiboSymbolFilter) return true;
+   
+   string curSym = _Symbol;
+   StringToUpper(curSym);
+   
+   string blocked = InpFiboBlockedSymbols;
+   StringToUpper(blocked);
+   
+   string pairs[];
+   int count = StringSplit(blocked, ',', pairs);
+   for(int i = 0; i < count; i++) {
+      string p = pairs[i];
+      StringTrimLeft(p);
+      StringTrimRight(p);
+      if(p != "" && StringFind(curSym, p) >= 0) {
+         return false; // Bloqueado para Fibo! (Opera apenas FR)
+      }
+   }
+   return true; // Permitido Fibo + FR
+}
+
 void DesenharLinhasAnalise() {
    double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
    double atrVal = g_MG_ATR;
@@ -604,7 +631,9 @@ input bool InpUseFechamentoMoeda = true;
 input double InpPerdaMaximaGlobalPct = 2.0, InpPerdaMaximaMoedaPct = 2.0, InpLucroAlvoMoedaPct = 4.0; // Trava Loss 2.0% e Meta 4.0%
 
 input group "=== FIBONACCI 2.0 (ALTA PRECISÃO) ==="
-input bool InpUseFiboPullback = false; // [DESATIVADO POR PADRÃO] Fibo desativado para validação do FR puro
+input bool   InpUseFiboPullback          = true;  // [FIBO 2.0] Ativar Retrações de Fibonacci
+input bool   InpSmartFiboSymbolFilter    = true;  // [ROTEAMENTO INTELIGENTE] Filtro Seletivo por Moeda (Núcleo de Ouro)
+input string InpFiboBlockedSymbols       = "EURGBP,EURAUD"; // Moedas com Fibo Desativada (Operam Apenas no FR)
 input double InpFibLevelSell = 61.8, InpFibLevelBuy = 18.0, InpFibMinRange_ATR_Multi = 2.0, InpFib_MagneticZoneATRPct = 20.0;
 input bool   InpUseFiboH4_2   = true;  // Ativar segundo nível Fibo H4
 input double InpFibLevel2Sell = 38.2;  // Nível 2 Venda H4 (% retração)
@@ -1660,6 +1689,22 @@ void DesenharLinhasChart() {
    color cor_h = C'28,85,58', cor_l = C'28,85,58'; string sym_h = is_lateral ? "▼" : "▲", sym_l = is_lateral ? "▲" : "▼";
    double ask = SymbolInfoDouble(_Symbol,SYMBOL_ASK), bid = SymbolInfoDouble(_Symbol,SYMBOL_BID); double zone_pts = (g_CachedATR > 0) ? (g_CachedATR / _Point) * 2.0 : 0;
    
+   // --- CHECAGEM GERAL DE REQUISITOS (SE HOUVER BLOQUEIO, NENHUMA LINHA VIRA CONTÍNUA) ---
+   int cur_spread = g_FastSpread, max_spread = g_CachedMaxSpread;
+   bool d_sess = false;
+   if(InpUseSessionFilter) {
+      MqlDateTime dts;
+      TimeCurrent(dts);
+      d_sess = !((InpSessionEndHour > InpSessionStartHour) ? (dts.hour >= InpSessionStartHour && dts.hour < InpSessionEndHour) : (dts.hour >= InpSessionStartHour || dts.hour < InpSessionEndHour));
+   }
+   bool d_spr = (cur_spread > max_spread);
+   bool d_liq = IsLowLiquidityWindow(), d_osc = IsLowOscillationWindow(), d_not = g_CachedNoticiaBlock, d_cax = g_LocalConsolidation;
+   bool d_mpos = (g_FastNPos >= InpMaxSimultaneousOps || (g_NPosDay >= InpMaxDayTrades && g_NPosSwingFR >= InpMaxFRSwingTrades && g_NPosSwingFibo >= InpMaxFiboTrades));
+   bool glb_blocked = (d_sess || d_spr || d_liq || d_osc || d_not || d_cax || d_mpos);
+
+   bool fr_all_ok = (!glb_blocked && InpUseFR && g_CachedFrCdOk && (g_CachedFRTop > 0 && g_CachedFRFundo > 0));
+   bool fb_all_ok = (!glb_blocked && IsFiboActiveForSymbol() && g_CachedFiboCdOk && (g_CachedFiboH > 0 && g_CachedFiboLow > 0 && g_CachedFiboATR > 0));
+
    // Quando o modo ZEN estiver ativado (g_ViewZonas == true), as linhas normais somem para dar lugar exclusivo à análise ZEN
    bool draw_lines = (!g_ViewZonas && g_LinhasModo != 2);
    
@@ -1671,8 +1716,9 @@ void DesenharLinhasChart() {
       if(!g_MG_BuyAllowed) fr_dir_buy = false;
    }
 
-   bool fr_top_hl = (fr_dir_sell && (g_ReadyFR_Sell || (MathAbs(g_CachedFRTop-ask)/_Point <= zone_pts && g_MG_SellAllowed)));
-   bool fr_bot_hl = (fr_dir_buy  && (g_ReadyFR_Buy  || (MathAbs(bid-g_CachedFRFundo)/_Point <= zone_pts && g_MG_BuyAllowed)));
+   // Linha só vira CONTÍNUA (SOLID) se TODOS os requisitos estiverem OK (fr_all_ok == true)
+   bool fr_top_hl = fr_all_ok && (fr_dir_sell && (g_ReadyFR_Sell || (MathAbs(g_CachedFRTop-ask)/_Point <= zone_pts && g_MG_SellAllowed)));
+   bool fr_bot_hl = fr_all_ok && (fr_dir_buy  && (g_ReadyFR_Buy  || (MathAbs(bid-g_CachedFRFundo)/_Point <= zone_pts && g_MG_BuyAllowed)));
    
    bool fr_show_top = false, fr_show_bot = false;
    if(draw_lines) {
@@ -1695,7 +1741,7 @@ void DesenharLinhasChart() {
    // --- FIBO (Pullback Fibonacci) ---
    double nSell=0, nBuy=0, nSell2=0, nBuy2=0;
    bool fb_show_sell = false, fb_show_buy = false;
-   if(InpUseFiboPullback && g_CachedFiboH > 0) {
+   if(IsFiboActiveForSymbol() && g_CachedFiboH > 0) {
       double range = g_CachedFiboH - g_CachedFiboLow;
       if(range >= (g_CachedFiboATR * InpFibMinRange_ATR_Multi)) {
          nSell = g_CachedFiboH - range * (InpFibLevelSell / 100.0);
@@ -1711,8 +1757,9 @@ void DesenharLinhasChart() {
          if(!g_MG_BuyAllowed) fb_dir_buy = false;
       }
 
-      bool fb_sell_hl = (fb_dir_sell && (g_ReadyFibo || (MathAbs(nSell-ask)/_Point <= zone_pts)));
-      bool fb_buy_hl  = (fb_dir_buy  && (g_ReadyFibo || (MathAbs(bid-nBuy)/_Point <= zone_pts)));
+      // Linha só vira CONTÍNUA (SOLID) se TODOS os requisitos estiverem OK (fb_all_ok == true)
+      bool fb_sell_hl = fb_all_ok && (fb_dir_sell && (g_ReadyFibo || (MathAbs(nSell-ask)/_Point <= zone_pts)));
+      bool fb_buy_hl  = fb_all_ok && (fb_dir_buy  && (g_ReadyFibo || (MathAbs(bid-nBuy)/_Point <= zone_pts)));
 
       if(draw_lines) {
          if(g_LinhasModo == 0 && g_ViewFibo) {
@@ -1742,7 +1789,7 @@ void DesenharLinhasChart() {
       
       bool in_rd_fr=(g_CachedFRTop>0&&MathAbs(g_CachedFRTop-ask)/_Point<=zone_pts)||(g_CachedFRFundo>0&&MathAbs(bid-g_CachedFRFundo)/_Point<=zone_pts);
       bool in_rd_fb=false;
-      if(InpUseFiboPullback&&g_CachedFiboH>0){
+      if(IsFiboActiveForSymbol() && g_CachedFiboH > 0){
          double r_f=g_CachedFiboH-g_CachedFiboLow;
          if(r_f>=(g_CachedFiboATR*InpFibMinRange_ATR_Multi)){
             double nS=g_CachedFiboH-r_f*(InpFibLevelSell/100.0),nB=g_CachedFiboLow+r_f*(InpFibLevelBuy/100.0);
@@ -1767,7 +1814,7 @@ void DesenharLinhasChart() {
       }
       
       bool fb_zen_show = false;
-      if(InpUseFiboPullback && g_CachedFiboH > 0 && g_ViewFibo) {
+      if(IsFiboActiveForSymbol() && g_CachedFiboH > 0 && g_ViewFibo) {
          if(g_LinhasModo == 0) fb_zen_show = true;
          else if(g_LinhasModo == 1) fb_zen_show = (g_ReadyFibo || in_rd_fb);
       }
@@ -1997,7 +2044,7 @@ PRow("reg",lx,rx,cur,"Regime  |  ADX "+DoubleToString(adx_val,1)+" (>="+StringFo
    double ask_p=SymbolInfoDouble(_Symbol,SYMBOL_ASK), bid_p=SymbolInfoDouble(_Symbol,SYMBOL_BID);
    double zone_p=(atr_val>0)?(atr_val/_Point)*2.0:0;
    bool in_rd_fr=(g_CachedFRTop>0&&MathAbs(g_CachedFRTop-ask_p)/_Point<=zone_p)||(g_CachedFRFundo>0&&MathAbs(bid_p-g_CachedFRFundo)/_Point<=zone_p);
-   bool in_rd_fb=false; if(InpUseFiboPullback&&g_CachedFiboH>0){double r_f=g_CachedFiboH-g_CachedFiboLow;if(r_f>=(atr_val*InpFibMinRange_ATR_Multi)){double nS=g_CachedFiboH-r_f*(InpFibLevelSell/100.0),nB=g_CachedFiboLow+r_f*(InpFibLevelBuy/100.0);if(MathAbs(nS-ask_p)/_Point<=zone_p||MathAbs(bid_p-nB)/_Point<=zone_p)in_rd_fb=true;}}
+   bool in_rd_fb=false; if(IsFiboActiveForSymbol() && g_CachedFiboH > 0){double r_f=g_CachedFiboH-g_CachedFiboLow;if(r_f>=(atr_val*InpFibMinRange_ATR_Multi)){double nS=g_CachedFiboH-r_f*(InpFibLevelSell/100.0),nB=g_CachedFiboLow+r_f*(InpFibLevelBuy/100.0);if(MathAbs(nS-ask_p)/_Point<=zone_p||MathAbs(bid_p-nB)/_Point<=zone_p)in_rd_fb=true;}}
    string m_dir = " [C/V]"; if(g_ModoConfluencia > 0) { if(g_MG_BuyAllowed && !g_MG_SellAllowed) m_dir = " [ C ]"; else if(!g_MG_BuyAllowed && g_MG_SellAllowed) m_dir = " [ V ]"; }
    ObjectDelete(0, PANEL_PREFIX + "fl_card"); ObjectDelete(0, PANEL_PREFIX + "fl_card_bg"); ObjectDelete(0, PANEL_PREFIX + "fl_card_acc");
    ObjectDelete(0, PANEL_PREFIX + "fl_n1"); ObjectDelete(0, PANEL_PREFIX + "fl_st"); ObjectDelete(0, PANEL_PREFIX + "fl_wr");
@@ -2038,42 +2085,81 @@ PRow("reg",lx,rx,cur,"Regime  |  ADX "+DoubleToString(adx_val,1)+" (>="+StringFo
       else s_fr_req = "Requisitos: ✖ Faltam Requisitos";
    }
 
-   bool show_fibo_card = InpUseFiboPullback;
+   bool show_fibo_card = IsFiboActiveForSymbol();
    if(!show_fibo_card) {
       ObjectDelete(0, PANEL_PREFIX + "fb_card"); ObjectDelete(0, PANEL_PREFIX + "fb_card_bg"); ObjectDelete(0, PANEL_PREFIX + "fb_card_acc");
       ObjectDelete(0, PANEL_PREFIX + "fb_n1"); ObjectDelete(0, PANEL_PREFIX + "fb_st"); ObjectDelete(0, PANEL_PREFIX + "fb_req"); ObjectDelete(0, PANEL_PREFIX + "fb_wr");
    }
 
+   // --- VALIDAÇÃO DE LINHA CONTÍNUA E ARMADO REAL DO FR ---
+   bool fr_dir_sell_chk = true, fr_dir_buy_chk = true;
+   GetFR_DirecaoOk(g_CachedMedDir, g_CachedRSI, fr_dir_sell_chk, fr_dir_buy_chk);
+   if(g_ModoConfluencia > 0) {
+      if(!g_MG_SellAllowed) fr_dir_sell_chk = false;
+      if(!g_MG_BuyAllowed)  fr_dir_buy_chk  = false;
+   }
+   bool fr_line_solid = (fr_dir_sell_chk && (g_ReadyFR_Sell || (MathAbs(g_CachedFRTop-ask_p)/_Point <= zone_p && g_MG_SellAllowed))) ||
+                        (fr_dir_buy_chk  && (g_ReadyFR_Buy  || (MathAbs(bid_p-g_CachedFRFundo)/_Point <= zone_p && g_MG_BuyAllowed)));
+   bool is_ready_fr = InpUseFR && fr_all_ok && (g_ReadyFR || (in_rd_fr && fr_line_solid));
+
    int cw_fr = show_fibo_card ? ((pw - (pad * 2) - 4) / 2) : (pw - (pad * 2));
    {
       int ox=px+pad-2;
-      bool is_ready=(g_ReadyFR||in_rd_fr)&&fr_cd;
-      color c_fr_st  = !InpUseFR ? CLR_MUTED : (g_ReadyFR ? C'0,255,136' : (in_rd_fr ? C'255,193,7' : C'255,107,107'));
-      string s_fr2   = !InpUseFR ? "OFF" : (g_ReadyFR ? "GATILHO!" : (in_rd_fr ? "ARMADO!" : "MASTER P.A."));
-      color c_fr_ico = fr_all_ok ? C'0,230,118' : CLR_RED; // Borda e Acento Verde Neon quando 100% OK (PRONTO), Vermelho se bloqueado
-      color bg_fr    = fr_all_ok ? C'10,30,15' : C'30,10,12'; // Fundo Verde Translúcido quando 100% OK, Vinho quando bloqueado
-      color txt_fr   = CLR_TXT_WHITE; // Título em Branco Neve Puro
+      
+      // Quando ARMADO E COM LINHA CONTÍNUA -> Vermelho (Img 3). Quando PONTILHADO/ESPERA/BLOQ -> 100% Cinza Neutro (Img 1)
+      color c_fr_ico = is_ready_fr ? C'245,80,80' : CLR_MUTED;
+      color bg_fr    = is_ready_fr ? C'38,14,18'  : CLR_BG_CARD;
+      color txt_fr   = is_ready_fr ? CLR_TXT_WHITE : CLR_TXT_LABEL;
+      color c_fr_st  = is_ready_fr ? (g_ReadyFR ? C'0,255,136' : C'255,193,7') : CLR_MUTED;
+      string s_fr2   = !InpUseFR ? "OFF" : (is_ready_fr ? (g_ReadyFR ? "GATILHO!" : "ARMADO!") : "Prox.Vela");
       
       PModuleCardH("fr_card",ox,cur,cw_fr,ch,c_fr_ico,bg_fr);
       PLabel("fr_n1",ox+ico_x,cur+nome_y,show_fibo_card?"F.ROMP"+m_dir:"FALSO ROMPIMENTO (F.ROMP)"+m_dir,txt_fr,InpPanelFontSize,true);
       PLabel("fr_st",ox+ico_x,cur+st_y,s_fr2,c_fr_st,InpPanelFontSize,true);
-      PLabel("fr_req",ox+ico_x,cur+req_y,show_fibo_card?(fr_all_ok?"Req: ✔ OK":"Req: ✖ BLOQ"):s_fr_req,c_fr_req_clr,InpPanelFontSize-2,true);
+      PLabel("fr_req",ox+ico_x,cur+req_y,show_fibo_card?(fr_all_ok?"Req: ✔ OK":"Req: ✖ BLOQ"):s_fr_req,is_ready_fr?c_fr_req_clr:CLR_TXT_DIM,InpPanelFontSize-2,true);
       string sr_fr=StringFormat(show_fibo_card?"%dW/%dT":"Assertividade: %dW / %dT",g_FrWins,g_FrTotal);
       if(g_FrTotal>0)sr_fr+=" ("+IntegerToString((int)((g_FrWins*100.0)/g_FrTotal))+"%)";
-      PLabel("fr_wr",ox+ico_x,cur+wr_y,sr_fr,(g_FrWins>=g_FrTotal/2.0&&g_FrTotal>0)?C'0,230,118':C'220,220,220',InpPanelFontSize-2);
+      PLabel("fr_wr",ox+ico_x,cur+wr_y,sr_fr,(is_ready_fr && g_FrWins>=g_FrTotal/2.0&&g_FrTotal>0)?C'0,230,118':CLR_TXT_LABEL,InpPanelFontSize-2);
    }
 
    if(show_fibo_card) {
       int cw2 = (pw - (pad * 2) - 4) / 2;
-      int ox=px+pad-2+cw2+4; color c_fb=!InpUseFiboPullback?CLR_MUTED:(fb_cd?CLR_AMBER:CLR_MUTED); string s_fb=!InpUseFiboPullback?"OFF":(g_ReadyFibo?"GATILHO!":(in_rd_fb?"ARMADO!":"Prox.Vela"));
-      if(c_fb==CLR_AMBER&&!g_ReadyFibo&&!in_rd_fb)c_fb=CLR_LIGHT_GRAY; bool is_ready=(g_ReadyFibo||in_rd_fb)&&fb_cd;
-      color c_fb_ico=is_ready?CLR_AMBER:c_fb; color bg_fb=is_ready?CLR_AMBER_DIM:CLR_BG_CARD; color txt_fb=is_ready?CLR_TXT_WHITE:CLR_TXT_LABEL;
+      int ox=px+pad-2+cw2+4;
+      
+      // --- VALIDAÇÃO DE LINHA CONTÍNUA E ARMADO REAL DA FIBO ---
+      double nSell_chk = 0, nBuy_chk = 0;
+      if(g_CachedFiboH > 0) {
+         double range_chk = g_CachedFiboH - g_CachedFiboLow;
+         if(range_chk >= (g_CachedFiboATR * InpFibMinRange_ATR_Multi)) {
+            nSell_chk = g_CachedFiboH - range_chk * (InpFibLevelSell / 100.0);
+            nBuy_chk  = g_CachedFiboLow + range_chk * (InpFibLevelBuy / 100.0);
+         }
+      }
+      bool fb_dir_sell_chk = (mkt_lateral || tDir == -1);
+      bool fb_dir_buy_chk  = (mkt_lateral || tDir == 1);
+      if(g_ModoConfluencia > 0) {
+         if(!g_MG_SellAllowed) fb_dir_sell_chk = false;
+         if(!g_MG_BuyAllowed)  fb_dir_buy_chk  = false;
+      }
+      bool fb_line_solid = (fb_dir_sell_chk && (g_ReadyFibo || (MathAbs(nSell_chk-ask_p)/_Point <= zone_p))) ||
+                           (fb_dir_buy_chk  && (g_ReadyFibo || (MathAbs(bid_p-nBuy_chk)/_Point <= zone_p)));
+      
+      bool fb_all_ok = (!glb_blocked && IsFiboActiveForSymbol() && fb_cd && (g_CachedFiboH > 0 && g_CachedFiboLow > 0 && g_CachedFiboATR > 0));
+      bool is_ready_fb = fb_all_ok && (g_ReadyFibo || (in_rd_fb && fb_line_solid));
+      
+      // Quando ARMADO E COM LINHA CONTÍNUA -> Amarelo (Img 2). Quando PONTILHADO/ESPERA/BLOQ -> 100% Cinza Neutro (Img 1)
+      color c_fb_ico = is_ready_fb ? CLR_AMBER : CLR_MUTED;
+      color bg_fb    = is_ready_fb ? CLR_AMBER_DIM : CLR_BG_CARD;
+      color txt_fb   = is_ready_fb ? CLR_TXT_WHITE : CLR_TXT_LABEL;
+      color c_fb_st  = is_ready_fb ? (g_ReadyFibo ? C'0,255,136' : CLR_AMBER) : CLR_MUTED;
+      string s_fb    = !IsFiboActiveForSymbol() ? "OFF" : (is_ready_fb ? (g_ReadyFibo ? "GATILHO!" : "ARMADO!") : "Prox.Vela");
+      
       PModuleCardH("fb_card",ox,cur,cw2,ch,c_fb_ico,bg_fb);
       PLabel("fb_n1",ox+ico_x,cur+nome_y,"FIBO"+m_dir,txt_fb,InpPanelFontSize,true);
-      PLabel("fb_st",ox+ico_x,cur+st_y,s_fb,c_fb_ico,InpPanelFontSize,true);
+      PLabel("fb_st",ox+ico_x,cur+st_y,s_fb,c_fb_st,InpPanelFontSize,true);
       string sr_fb=StringFormat("%dW/%dT",g_FiboWins,g_FiboTotal);
       if(g_FiboTotal>0)sr_fb+=" ("+IntegerToString((int)((g_FiboWins*100.0)/g_FiboTotal))+"%)";
-      PLabel("fb_wr",ox+ico_x,cur+wr_y,sr_fb,(g_FiboWins>=g_FiboTotal/2.0&&g_FiboTotal>0)?CLR_TEAL:CLR_TXT_LABEL,InpPanelFontSize-2);
+      PLabel("fb_wr",ox+ico_x,cur+wr_y,sr_fb,(is_ready_fb && g_FiboWins>=g_FiboTotal/2.0&&g_FiboTotal>0)?CLR_TEAL:CLR_TXT_LABEL,InpPanelFontSize-2);
    }
    cur+=ch+22;
 
@@ -2224,7 +2310,7 @@ void DesenharPainelDiag() {
    DPLBL("st_hdr",dlx,cur+2,"REQUISITOS - "+s_name+":",c_name,InpPanelFontSize,true);cur+=20;
    bool is_lat=IsMercadoLateral(), s_rdy=false; int tD=g_CachedTrendDir;
    if(g_DiagTab==2){
-      bool u_b=InpUseFiboPullback, c_c=g_CachedFiboCdOk; bool c_l=(g_CachedFiboH>0&&g_CachedFiboLow>0&&g_CachedFiboATR>0);
+      bool u_b=IsFiboActiveForSymbol(), c_c=g_CachedFiboCdOk; bool c_l=(g_CachedFiboH>0&&g_CachedFiboLow>0&&g_CachedFiboATR>0);
       bool c_a=p_UsePassaFiltroADXFibo?(g_H4_ADX>=cfg_ADX_MinLevel):true;
       int t_h4=ComputeTrendDir(hShortEMA_H4,hEMA_H4); bool c_t=(!p_UseTrendDirFibo || t_h4==1 || t_h4==-1);
       DROW_DYN("Uso Estratégia",u_b?"sim":"OFF",!u_b)DROW_DYN("Cooldown Fibo",c_c?"livre":"AGUARDAR",!c_c)DROW_DYN("Cálculo Níveis H4",c_l?"sim":"NÃO",!c_l)DROW_DYN("Tendência Macro H4",c_t?"alinhado":"NEUTRO",!c_t)DROW_DYN("Força H4 (ADX="+DoubleToString(g_H4_ADX,1)+")",c_a?"ok":"FRACO",!c_a)
@@ -3526,7 +3612,7 @@ void OnTick() {
    //================================================================
    // MOTOR 3: FIBONACCI 2.0 DE ALTA PRECISÃO (5 PILARES SNIPER)
    //================================================================
-   if(InpUseFiboPullback && !block_fibo) {
+   if(IsFiboActiveForSymbol() && !block_fibo) {
       int cooldown_sec = InpFR_CooldownMinutes * 60;
       bool fibo_cd_buy  = (cooldown_sec <= 0 || (TimeCurrent() - l_fibo_buy_ts >= cooldown_sec));
       bool fibo_cd_sell = (cooldown_sec <= 0 || (TimeCurrent() - l_fibo_sell_ts >= cooldown_sec));
