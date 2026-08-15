@@ -1,6 +1,9 @@
-InpPerfil=1||0||0||2||N
+const fs = require('fs');
+const path = require('path');
+
+const setContent = `InpPerfil=1||0||0||2||N
 InpAutoRegimeSwitch=true||0||0||0||N
-InpBaseRisk_L1=2.0||0.6||0.1||3.0||N
+InpBaseRisk_L1=1.5||0.6||0.1||3.0||N
 InpMaxAutoRisk=3.0||0.0||0.0||0.0||N
 InpVolPartialPct=50.0||0.0||0.0||0.0||N
 InpTP_Parcial_Multi=1.0||0.0||0.0||0.0||N
@@ -14,8 +17,8 @@ InpMaxConsecLosses=3||0||0||0||N
 InpTP_Min_Multi=0.3||0.0||0.0||0.0||N
 InpTP_Max_Multi=5.0||0.0||0.0||0.0||N
 InpMinViableATR_Multi=1.0||0.0||0.0||0.0||N
-InpAutoTF=false||0||0||0||N
-InpTF=16386||0||0||0||N
+InpAutoTF=true||0||0||0||N
+InpTF=16388||0||0||0||N
 InpCandlesToLook=14||0||0||0||N
 InpUseTrendFilter=true||0||0||0||N
 InpShortEMA_Period=9||0||0||0||N
@@ -32,6 +35,12 @@ InpFR_RequireWickRejection=true||0||0||0||N
 InpFR_WickBodyRatio=0.5||0.0||0.0||0.0||N
 InpFR_WickRangeMinPct=35.0||0.0||0.0||0.0||N
 InpFR_BodyRangeMinPct=20.0||0.0||0.0||0.0||N
+InpFR_RequireQuadrantClose=true||0||0||0||N
+InpFR_CloseQuadrantPct=35.0||0.0||0.0||0.0||N
+InpFR_MaxPenetrationATR=0.75||0.0||0.0||0.0||N
+InpFR_RequireVolumeAbsorption=true||0||0||0||N
+InpFR_MinVolumeRatio=0.90||0.0||0.0||0.0||N
+InpFR_UseStructuralTP2=true||0||0||0||N
 InpFR_AdaptiveRSI=true||0||0||0||N
 InpFR_RSI_LateralRelax=8.0||0.0||0.0||0.0||N
 InpFR_NeutralDirByRSI=true||0||0||0||N
@@ -47,6 +56,8 @@ InpUseBreakEven=true||0||0||0||N
 InpBE_Trigger_Normal=0.50||0.0||0.0||0.0||N
 InpBE_Trigger_Fibo=0.50||0.0||0.0||0.0||N
 InpBE_LockProfitPts=0.0||0.0||0.0||0.0||N
+InpBE_UseATRBreathing=true||0||0||0||N
+InpBE_BreathingATRPct=20.0||0.0||0.0||0.0||N
 InpUseTrailStop=true||0||0||0||N
 InpTrail_ATR_Multi=1.0||0.0||0.0||0.0||N
 InpUseADX=true||0||0||0||N
@@ -101,3 +112,10 @@ InpPropFase2TargetPct=4.0||0.0||0.0||0.0||N
 InpPropMaxRiskPct=1.2||0.0||0.0||0.0||N
 InpPropMaxPos=2||0||0||0||N
 InpPropConsistencyPct=35.0||0.0||0.0||0.0||N
+`;
+
+// Salva em UTF-16LE para compatibilidade perfeita com o MT5
+const outPath = path.join(__dirname, 'Top_8_Moedas_FR_Sniper.set');
+const buffer = Buffer.from('\ufeff' + setContent, 'utf16le');
+fs.writeFileSync(outPath, buffer);
+console.log('✅ Arquivo Top_8_Moedas_FR_Sniper.set criado com sucesso em UTF-16LE!');

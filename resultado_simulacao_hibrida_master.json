@@ -1,0 +1,1277 @@
+{
+  "sim05": {
+    "riskPctPerTrade": 0.5,
+    "months": 43,
+    "totalTrades": 199,
+    "totalWins": 147,
+    "totalBE": 15,
+    "totalLosses": 37,
+    "winRatePct": "73.9",
+    "globalPF": "7.78",
+    "fixedProfitUsd": 13693.500000000007,
+    "fixedReturnPct": "136.9",
+    "fixedMonthlyUsd": "318.45",
+    "fixedMonthlyPct": "3.18",
+    "fixedMaxDDPct": "0.89",
+    "fixedMaxDDUsd": "159.75",
+    "compBalance": "38911.52",
+    "compProfitUsd": "28911.52",
+    "compReturnPct": "289.1",
+    "compMaxDDPct": "1.59",
+    "pairStats": {
+      "EURUSD": {
+        "tf": "H1",
+        "trades": 19,
+        "wins": 14,
+        "be": 2,
+        "losses": 3,
+        "profitFixedUsd": 1264.6499999999999,
+        "grossProfit": 1427.8999999999999,
+        "grossLoss": 163.25
+      },
+      "EURCAD": {
+        "tf": "H1",
+        "trades": 14,
+        "wins": 12,
+        "be": 1,
+        "losses": 1,
+        "profitFixedUsd": 1196.5,
+        "grossProfit": 1254.5,
+        "grossLoss": 58
+      },
+      "EURAUD": {
+        "tf": "H1",
+        "trades": 16,
+        "wins": 15,
+        "be": 1,
+        "losses": 0,
+        "profitFixedUsd": 1533.7000000000005,
+        "grossProfit": 1538.0000000000005,
+        "grossLoss": 4.300000000000001
+      },
+      "NZDUSD": {
+        "tf": "H1",
+        "trades": 28,
+        "wins": 20,
+        "be": 1,
+        "losses": 7,
+        "profitFixedUsd": 1579,
+        "grossProfit": 1955,
+        "grossLoss": 376
+      },
+      "USDCAD": {
+        "tf": "H2",
+        "trades": 12,
+        "wins": 10,
+        "be": 0,
+        "losses": 2,
+        "profitFixedUsd": 744.2000000000002,
+        "grossProfit": 851.0000000000001,
+        "grossLoss": 106.8
+      },
+      "AUDUSD": {
+        "tf": "H2",
+        "trades": 31,
+        "wins": 25,
+        "be": 3,
+        "losses": 3,
+        "profitFixedUsd": 2658.550000000001,
+        "grossProfit": 2826.250000000001,
+        "grossLoss": 167.70000000000002
+      },
+      "EURJPY": {
+        "tf": "H2",
+        "trades": 23,
+        "wins": 15,
+        "be": 2,
+        "losses": 6,
+        "profitFixedUsd": 1655.8500000000006,
+        "grossProfit": 1984.2500000000005,
+        "grossLoss": 328.40000000000003
+      },
+      "USDCHF": {
+        "tf": "H2",
+        "trades": 29,
+        "wins": 16,
+        "be": 2,
+        "losses": 11,
+        "profitFixedUsd": 890.75,
+        "grossProfit": 1483,
+        "grossLoss": 592.25
+      },
+      "GBPUSD": {
+        "tf": "H2",
+        "trades": 20,
+        "wins": 14,
+        "be": 2,
+        "losses": 4,
+        "profitFixedUsd": 1611.9999999999993,
+        "grossProfit": 1832.3999999999994,
+        "grossLoss": 220.4
+      },
+      "EURGBP": {
+        "tf": "H2",
+        "trades": 7,
+        "wins": 6,
+        "be": 1,
+        "losses": 0,
+        "profitFixedUsd": 558.3,
+        "grossProfit": 561.4,
+        "grossLoss": 3.0999999999999996
+      }
+    },
+    "monthlyData": [
+      {
+        "month": 1,
+        "fixedProfit": 272.85000000000036,
+        "compProfit": 273.41966551733276,
+        "trades": 6,
+        "wins": 3
+      },
+      {
+        "month": 2,
+        "fixedProfit": 88.45000000000073,
+        "compProfit": 89.80558360106261,
+        "trades": 4,
+        "wins": 2
+      },
+      {
+        "month": 3,
+        "fixedProfit": 185.10000000000036,
+        "compProfit": 192.55293259806967,
+        "trades": 2,
+        "wins": 2
+      },
+      {
+        "month": 4,
+        "fixedProfit": 797.1000000000004,
+        "compProfit": 869.3489911108627,
+        "trades": 6,
+        "wins": 6
+      },
+      {
+        "month": 5,
+        "fixedProfit": 469.0000000000018,
+        "compProfit": 544.6926744414068,
+        "trades": 6,
+        "wins": 5
+      },
+      {
+        "month": 6,
+        "fixedProfit": 241.14999999999964,
+        "compProfit": 290.6503192452892,
+        "trades": 5,
+        "wins": 3
+      },
+      {
+        "month": 7,
+        "fixedProfit": 904.4500000000025,
+        "compProfit": 1151.4618853148513,
+        "trades": 6,
+        "wins": 6
+      },
+      {
+        "month": 8,
+        "fixedProfit": 891.3500000000022,
+        "compProfit": 1239.9696016141188,
+        "trades": 6,
+        "wins": 6
+      },
+      {
+        "month": 9,
+        "fixedProfit": 501.65000000000146,
+        "compProfit": 749.6407880623701,
+        "trades": 7,
+        "wins": 6
+      },
+      {
+        "month": 10,
+        "fixedProfit": 60.54999999999927,
+        "compProfit": 90.96029379578431,
+        "trades": 3,
+        "wins": 1
+      },
+      {
+        "month": 11,
+        "fixedProfit": 396.10000000000036,
+        "compProfit": 622.211737352889,
+        "trades": 4,
+        "wins": 4
+      },
+      {
+        "month": 12,
+        "fixedProfit": 344.8500000000022,
+        "compProfit": 560.9321205412689,
+        "trades": 7,
+        "wins": 4
+      },
+      {
+        "month": 13,
+        "fixedProfit": 664.8999999999978,
+        "compProfit": 1137.7877616238402,
+        "trades": 8,
+        "wins": 7
+      },
+      {
+        "month": 14,
+        "fixedProfit": 357.85000000000036,
+        "compProfit": 644.0032131418448,
+        "trades": 5,
+        "wins": 4
+      },
+      {
+        "month": 15,
+        "fixedProfit": 411.7000000000007,
+        "compProfit": 770.5879255410982,
+        "trades": 6,
+        "wins": 4
+      },
+      {
+        "month": 16,
+        "fixedProfit": -53.25,
+        "compProfit": -102.38923575290028,
+        "trades": 1,
+        "wins": 0
+      },
+      {
+        "month": 17,
+        "fixedProfit": 340.6999999999971,
+        "compProfit": 656.6606070292873,
+        "trades": 4,
+        "wins": 3
+      },
+      {
+        "month": 18,
+        "fixedProfit": 587.5499999999993,
+        "compProfit": 1186.114333604659,
+        "trades": 5,
+        "wins": 4
+      },
+      {
+        "month": 19,
+        "fixedProfit": 232.15000000000146,
+        "compProfit": 485.7664506614019,
+        "trades": 4,
+        "wins": 2
+      },
+      {
+        "month": 20,
+        "fixedProfit": 107.75,
+        "compProfit": 231.79144485699362,
+        "trades": 2,
+        "wins": 2
+      },
+      {
+        "month": 21,
+        "fixedProfit": 163.4499999999971,
+        "compProfit": 353.2471104175929,
+        "trades": 5,
+        "wins": 3
+      },
+      {
+        "month": 22,
+        "fixedProfit": 304.84999999999854,
+        "compProfit": 675.5870502133184,
+        "trades": 7,
+        "wins": 4
+      },
+      {
+        "month": 23,
+        "fixedProfit": 199.95000000000073,
+        "compProfit": 455.9779202319223,
+        "trades": 2,
+        "wins": 2
+      },
+      {
+        "month": 24,
+        "fixedProfit": 128.34999999999854,
+        "compProfit": 296.7662136674735,
+        "trades": 3,
+        "wins": 2
+      },
+      {
+        "month": 25,
+        "fixedProfit": 73.75,
+        "compProfit": 170.820077219003,
+        "trades": 4,
+        "wins": 2
+      },
+      {
+        "month": 26,
+        "fixedProfit": 54.35000000000218,
+        "compProfit": 127.8005899971431,
+        "trades": 3,
+        "wins": 2
+      },
+      {
+        "month": 27,
+        "fixedProfit": 519.3499999999985,
+        "compProfit": 1257.4602680521857,
+        "trades": 4,
+        "wins": 4
+      },
+      {
+        "month": 28,
+        "fixedProfit": 193.04999999999563,
+        "compProfit": 484.27258138482284,
+        "trades": 4,
+        "wins": 3
+      },
+      {
+        "month": 29,
+        "fixedProfit": 520.6500000000015,
+        "compProfit": 1353.05414545054,
+        "trades": 5,
+        "wins": 4
+      },
+      {
+        "month": 30,
+        "fixedProfit": 186.14999999999782,
+        "compProfit": 501.9449671346956,
+        "trades": 2,
+        "wins": 2
+      },
+      {
+        "month": 31,
+        "fixedProfit": 275.7999999999993,
+        "compProfit": 759.6647744201218,
+        "trades": 5,
+        "wins": 4
+      },
+      {
+        "month": 32,
+        "fixedProfit": 574.8999999999978,
+        "compProfit": 1654.3391671249374,
+        "trades": 7,
+        "wins": 6
+      },
+      {
+        "month": 33,
+        "fixedProfit": 429.34999999999854,
+        "compProfit": 1296.7630131608748,
+        "trades": 3,
+        "wins": 3
+      },
+      {
+        "month": 34,
+        "fixedProfit": 84.09999999999854,
+        "compProfit": 259.056846193198,
+        "trades": 2,
+        "wins": 1
+      },
+      {
+        "month": 35,
+        "fixedProfit": 210.25,
+        "compProfit": 661.39811967075,
+        "trades": 2,
+        "wins": 2
+      },
+      {
+        "month": 36,
+        "fixedProfit": 471.6499999999978,
+        "compProfit": 1531.724747815475,
+        "trades": 6,
+        "wins": 4
+      },
+      {
+        "month": 37,
+        "fixedProfit": 343.59999999999854,
+        "compProfit": 1167.171446484499,
+        "trades": 5,
+        "wins": 5
+      },
+      {
+        "month": 38,
+        "fixedProfit": 122.79999999999563,
+        "compProfit": 422.8104628747751,
+        "trades": 9,
+        "wins": 4
+      },
+      {
+        "month": 39,
+        "fixedProfit": 469.0499999999993,
+        "compProfit": 1675.19867555175,
+        "trades": 4,
+        "wins": 4
+      },
+      {
+        "month": 40,
+        "fixedProfit": 236.1999999999971,
+        "compProfit": 873.075740930457,
+        "trades": 7,
+        "wins": 5
+      },
+      {
+        "month": 41,
+        "fixedProfit": 2.849999999998545,
+        "compProfit": 7.473599769924476,
+        "trades": 6,
+        "wins": 3
+      },
+      {
+        "month": 42,
+        "fixedProfit": 168.89999999999782,
+        "compProfit": 634.1611175923172,
+        "trades": 5,
+        "wins": 3
+      },
+      {
+        "month": 43,
+        "fixedProfit": 158.1999999999971,
+        "compProfit": 605.7863038315045,
+        "trades": 2,
+        "wins": 1
+      }
+    ]
+  },
+  "sim10": {
+    "riskPctPerTrade": 1,
+    "months": 43,
+    "totalTrades": 199,
+    "totalWins": 147,
+    "totalBE": 15,
+    "totalLosses": 37,
+    "winRatePct": "73.9",
+    "globalPF": "8.25",
+    "fixedProfitUsd": 28050.999999999975,
+    "fixedReturnPct": "280.5",
+    "fixedMonthlyUsd": "652.35",
+    "fixedMonthlyPct": "6.52",
+    "fixedMaxDDPct": "1.17",
+    "fixedMaxDDUsd": "309.75",
+    "compBalance": "158312.81",
+    "compProfitUsd": "148312.81",
+    "compReturnPct": "1483.1",
+    "compMaxDDPct": "3.07",
+    "pairStats": {
+      "EURUSD": {
+        "tf": "H1",
+        "trades": 19,
+        "wins": 14,
+        "be": 2,
+        "losses": 3,
+        "profitFixedUsd": 2579.649999999999,
+        "grossProfit": 2892.899999999999,
+        "grossLoss": 313.25
+      },
+      "EURCAD": {
+        "tf": "H1",
+        "trades": 14,
+        "wins": 12,
+        "be": 1,
+        "losses": 1,
+        "profitFixedUsd": 2449,
+        "grossProfit": 2557,
+        "grossLoss": 108
+      },
+      "EURAUD": {
+        "tf": "H1",
+        "trades": 16,
+        "wins": 15,
+        "be": 1,
+        "losses": 0,
+        "profitFixedUsd": 3136.199999999999,
+        "grossProfit": 3140.499999999999,
+        "grossLoss": 4.300000000000001
+      },
+      "NZDUSD": {
+        "tf": "H1",
+        "trades": 28,
+        "wins": 20,
+        "be": 1,
+        "losses": 7,
+        "profitFixedUsd": 3249,
+        "grossProfit": 3975,
+        "grossLoss": 726
+      },
+      "USDCAD": {
+        "tf": "H2",
+        "trades": 12,
+        "wins": 10,
+        "be": 0,
+        "losses": 2,
+        "profitFixedUsd": 1529.1999999999998,
+        "grossProfit": 1736,
+        "grossLoss": 206.8
+      },
+      "AUDUSD": {
+        "tf": "H2",
+        "trades": 31,
+        "wins": 25,
+        "be": 3,
+        "losses": 3,
+        "profitFixedUsd": 5408.550000000003,
+        "grossProfit": 5726.250000000003,
+        "grossLoss": 317.7
+      },
+      "EURJPY": {
+        "tf": "H2",
+        "trades": 23,
+        "wins": 15,
+        "be": 2,
+        "losses": 6,
+        "profitFixedUsd": 3393.349999999998,
+        "grossProfit": 4021.7499999999986,
+        "grossLoss": 628.4
+      },
+      "USDCHF": {
+        "tf": "H2",
+        "trades": 29,
+        "wins": 16,
+        "be": 2,
+        "losses": 11,
+        "profitFixedUsd": 1875.75,
+        "grossProfit": 3018,
+        "grossLoss": 1142.25
+      },
+      "GBPUSD": {
+        "tf": "H2",
+        "trades": 20,
+        "wins": 14,
+        "be": 2,
+        "losses": 4,
+        "profitFixedUsd": 3291.999999999999,
+        "grossProfit": 3712.399999999999,
+        "grossLoss": 420.4
+      },
+      "EURGBP": {
+        "tf": "H2",
+        "trades": 7,
+        "wins": 6,
+        "be": 1,
+        "losses": 0,
+        "profitFixedUsd": 1138.3000000000002,
+        "grossProfit": 1141.4,
+        "grossLoss": 3.0999999999999996
+      }
+    },
+    "monthlyData": [
+      {
+        "month": 1,
+        "fixedProfit": 565.3500000000004,
+        "compProfit": 568.4445479567858,
+        "trades": 6,
+        "wins": 3
+      },
+      {
+        "month": 2,
+        "fixedProfit": 190.95000000000073,
+        "compProfit": 197.60144518895504,
+        "trades": 4,
+        "wins": 2
+      },
+      {
+        "month": 3,
+        "fixedProfit": 377.60000000000036,
+        "compProfit": 409.7118496277508,
+        "trades": 2,
+        "wins": 2
+      },
+      {
+        "month": 4,
+        "fixedProfit": 1614.6000000000004,
+        "compProfit": 1928.0717754995749,
+        "trades": 6,
+        "wins": 6
+      },
+      {
+        "month": 5,
+        "fixedProfit": 959.0000000000018,
+        "compProfit": 1299.7178375662043,
+        "trades": 6,
+        "wins": 5
+      },
+      {
+        "month": 6,
+        "fixedProfit": 496.14999999999964,
+        "compProfit": 725.0554899704402,
+        "trades": 5,
+        "wins": 3
+      },
+      {
+        "month": 7,
+        "fixedProfit": 1829.4500000000025,
+        "compProfit": 2987.0552484328946,
+        "trades": 6,
+        "wins": 6
+      },
+      {
+        "month": 8,
+        "fixedProfit": 1803.8500000000022,
+        "compProfit": 3518.9460820996756,
+        "trades": 6,
+        "wins": 6
+      },
+      {
+        "month": 9,
+        "fixedProfit": 1026.6499999999978,
+        "compProfit": 2312.9260159660516,
+        "trades": 7,
+        "wins": 6
+      },
+      {
+        "month": 10,
+        "fixedProfit": 130.54999999999927,
+        "compProfit": 298.60631764056234,
+        "trades": 3,
+        "wins": 1
+      },
+      {
+        "month": 11,
+        "fixedProfit": 806.0999999999985,
+        "compProfit": 2010.327972200761,
+        "trades": 4,
+        "wins": 4
+      },
+      {
+        "month": 12,
+        "fixedProfit": 714.8500000000022,
+        "compProfit": 1914.991522574459,
+        "trades": 7,
+        "wins": 4
+      },
+      {
+        "month": 13,
+        "fixedProfit": 1354.8999999999978,
+        "compProfit": 4024.19278441586,
+        "trades": 8,
+        "wins": 7
+      },
+      {
+        "month": 14,
+        "fixedProfit": 732.8499999999985,
+        "compProfit": 2410.0415090882925,
+        "trades": 5,
+        "wins": 4
+      },
+      {
+        "month": 15,
+        "fixedProfit": 841.6999999999971,
+        "compProfit": 2997.8849958015053,
+        "trades": 6,
+        "wins": 4
+      },
+      {
+        "month": 16,
+        "fixedProfit": -103.25,
+        "compProfit": -388.2569159433551,
+        "trades": 1,
+        "wins": 0
+      },
+      {
+        "month": 17,
+        "fixedProfit": 693.1999999999971,
+        "compProfit": 2621.1417690072703,
+        "trades": 4,
+        "wins": 3
+      },
+      {
+        "month": 18,
+        "fixedProfit": 1192.5499999999993,
+        "compProfit": 4950.545797493309,
+        "trades": 5,
+        "wins": 4
+      },
+      {
+        "month": 19,
+        "fixedProfit": 477.15000000000146,
+        "compProfit": 2130.0696092063445,
+        "trades": 4,
+        "wins": 2
+      },
+      {
+        "month": 20,
+        "fixedProfit": 222.75,
+        "compProfit": 1050.8975715450288,
+        "trades": 2,
+        "wins": 2
+      },
+      {
+        "month": 21,
+        "fixedProfit": 343.4499999999971,
+        "compProfit": 1638.686903864509,
+        "trades": 5,
+        "wins": 3
+      },
+      {
+        "month": 22,
+        "fixedProfit": 634.8499999999985,
+        "compProfit": 3189.0073718881686,
+        "trades": 7,
+        "wins": 4
+      },
+      {
+        "month": 23,
+        "fixedProfit": 407.4500000000007,
+        "compProfit": 2168.605523480437,
+        "trades": 2,
+        "wins": 2
+      },
+      {
+        "month": 24,
+        "fixedProfit": 265.84999999999854,
+        "compProfit": 1456.00617701577,
+        "trades": 3,
+        "wins": 2
+      },
+      {
+        "month": 25,
+        "fixedProfit": 161.25,
+        "compProfit": 888.9161728068357,
+        "trades": 4,
+        "wins": 2
+      },
+      {
+        "month": 26,
+        "fixedProfit": 119.35000000000218,
+        "compProfit": 677.8393976882508,
+        "trades": 3,
+        "wins": 2
+      },
+      {
+        "month": 27,
+        "fixedProfit": 1051.8499999999985,
+        "compProfit": 6333.3350472718375,
+        "trades": 4,
+        "wins": 4
+      },
+      {
+        "month": 28,
+        "fixedProfit": 398.04999999999563,
+        "compProfit": 2574.7218635694444,
+        "trades": 4,
+        "wins": 3
+      },
+      {
+        "month": 29,
+        "fixedProfit": 1058.1500000000015,
+        "compProfit": 7352.308943509095,
+        "trades": 5,
+        "wins": 4
+      },
+      {
+        "month": 30,
+        "fixedProfit": 378.6499999999978,
+        "compProfit": 2833.5574017462204,
+        "trades": 2,
+        "wins": 2
+      },
+      {
+        "month": 31,
+        "fixedProfit": 568.2999999999993,
+        "compProfit": 4442.590826822328,
+        "trades": 5,
+        "wins": 4
+      },
+      {
+        "month": 32,
+        "fixedProfit": 1172.3999999999978,
+        "compProfit": 10017.710356739408,
+        "trades": 7,
+        "wins": 6
+      },
+      {
+        "month": 33,
+        "fixedProfit": 869.3500000000022,
+        "compProfit": 8189.8219573478855,
+        "trades": 3,
+        "wins": 3
+      },
+      {
+        "month": 34,
+        "fixedProfit": 174.09999999999854,
+        "compProfit": 1707.7587442923104,
+        "trades": 2,
+        "wins": 1
+      },
+      {
+        "month": 35,
+        "fixedProfit": 427.75,
+        "compProfit": 4374.711512617112,
+        "trades": 2,
+        "wins": 2
+      },
+      {
+        "month": 36,
+        "fixedProfit": 964.1500000000015,
+        "compProfit": 10521.341702257938,
+        "trades": 6,
+        "wins": 4
+      },
+      {
+        "month": 37,
+        "fixedProfit": 703.5999999999985,
+        "compProfit": 8408.805744267956,
+        "trades": 5,
+        "wins": 5
+      },
+      {
+        "month": 38,
+        "fixedProfit": 275.29999999999563,
+        "compProfit": 3395.8681042821554,
+        "trades": 9,
+        "wins": 4
+      },
+      {
+        "month": 39,
+        "fixedProfit": 951.5499999999956,
+        "compProfit": 12618.594563458493,
+        "trades": 4,
+        "wins": 4
+      },
+      {
+        "month": 40,
+        "fixedProfit": 496.1999999999898,
+        "compProfit": 7060.229211421538,
+        "trades": 7,
+        "wins": 5
+      },
+      {
+        "month": 41,
+        "fixedProfit": 25.349999999998545,
+        "compProfit": 323.811844328593,
+        "trades": 6,
+        "wins": 3
+      },
+      {
+        "month": 42,
+        "fixedProfit": 353.90000000000146,
+        "compProfit": 5215.784179302573,
+        "trades": 5,
+        "wins": 3
+      },
+      {
+        "month": 43,
+        "fixedProfit": 323.1999999999971,
+        "compProfit": 4954.827184149908,
+        "trades": 2,
+        "wins": 1
+      }
+    ]
+  },
+  "sim15": {
+    "riskPctPerTrade": 1.5,
+    "months": 43,
+    "totalTrades": 199,
+    "totalWins": 147,
+    "totalBE": 15,
+    "totalLosses": 37,
+    "winRatePct": "73.9",
+    "globalPF": "8.41",
+    "fixedProfitUsd": 42408.49999999996,
+    "fixedReturnPct": "424.1",
+    "fixedMonthlyUsd": "986.24",
+    "fixedMonthlyPct": "9.86",
+    "fixedMaxDDPct": "1.54",
+    "fixedMaxDDUsd": "459.75",
+    "compBalance": "630557.36",
+    "compProfitUsd": "620557.36",
+    "compReturnPct": "6205.6",
+    "compMaxDDPct": "4.53",
+    "pairStats": {
+      "EURUSD": {
+        "tf": "H1",
+        "trades": 19,
+        "wins": 14,
+        "be": 2,
+        "losses": 3,
+        "profitFixedUsd": 3894.649999999999,
+        "grossProfit": 4357.9,
+        "grossLoss": 463.25
+      },
+      "EURCAD": {
+        "tf": "H1",
+        "trades": 14,
+        "wins": 12,
+        "be": 1,
+        "losses": 1,
+        "profitFixedUsd": 3701.5,
+        "grossProfit": 3859.5,
+        "grossLoss": 158
+      },
+      "EURAUD": {
+        "tf": "H1",
+        "trades": 16,
+        "wins": 15,
+        "be": 1,
+        "losses": 0,
+        "profitFixedUsd": 4738.699999999999,
+        "grossProfit": 4742.999999999998,
+        "grossLoss": 4.300000000000001
+      },
+      "NZDUSD": {
+        "tf": "H1",
+        "trades": 28,
+        "wins": 20,
+        "be": 1,
+        "losses": 7,
+        "profitFixedUsd": 4919,
+        "grossProfit": 5995,
+        "grossLoss": 1076
+      },
+      "USDCAD": {
+        "tf": "H2",
+        "trades": 12,
+        "wins": 10,
+        "be": 0,
+        "losses": 2,
+        "profitFixedUsd": 2314.1999999999994,
+        "grossProfit": 2620.9999999999995,
+        "grossLoss": 306.8
+      },
+      "AUDUSD": {
+        "tf": "H2",
+        "trades": 31,
+        "wins": 25,
+        "be": 3,
+        "losses": 3,
+        "profitFixedUsd": 8158.550000000004,
+        "grossProfit": 8626.250000000002,
+        "grossLoss": 467.69999999999993
+      },
+      "EURJPY": {
+        "tf": "H2",
+        "trades": 23,
+        "wins": 15,
+        "be": 2,
+        "losses": 6,
+        "profitFixedUsd": 5130.849999999998,
+        "grossProfit": 6059.249999999999,
+        "grossLoss": 928.3999999999999
+      },
+      "USDCHF": {
+        "tf": "H2",
+        "trades": 29,
+        "wins": 16,
+        "be": 2,
+        "losses": 11,
+        "profitFixedUsd": 2860.75,
+        "grossProfit": 4553,
+        "grossLoss": 1692.25
+      },
+      "GBPUSD": {
+        "tf": "H2",
+        "trades": 20,
+        "wins": 14,
+        "be": 2,
+        "losses": 4,
+        "profitFixedUsd": 4972.000000000002,
+        "grossProfit": 5592.4000000000015,
+        "grossLoss": 620.4
+      },
+      "EURGBP": {
+        "tf": "H2",
+        "trades": 7,
+        "wins": 6,
+        "be": 1,
+        "losses": 0,
+        "profitFixedUsd": 1718.3000000000002,
+        "grossProfit": 1721.4,
+        "grossLoss": 3.0999999999999996
+      }
+    },
+    "monthlyData": [
+      {
+        "month": 1,
+        "fixedProfit": 857.8500000000004,
+        "compProfit": 865.3112151934547,
+        "trades": 6,
+        "wins": 3
+      },
+      {
+        "month": 2,
+        "fixedProfit": 293.4500000000007,
+        "compProfit": 309.2389812139063,
+        "trades": 4,
+        "wins": 2
+      },
+      {
+        "month": 3,
+        "fixedProfit": 570.1000000000004,
+        "compProfit": 644.6228801168927,
+        "trades": 2,
+        "wins": 2
+      },
+      {
+        "month": 4,
+        "fixedProfit": 2432.1000000000004,
+        "compProfit": 3176.544526778891,
+        "trades": 6,
+        "wins": 6
+      },
+      {
+        "month": 5,
+        "fixedProfit": 1449.0000000000018,
+        "compProfit": 2286.371817688998,
+        "trades": 6,
+        "wins": 5
+      },
+      {
+        "month": 6,
+        "fixedProfit": 751.1499999999996,
+        "compProfit": 1327.070537165153,
+        "trades": 5,
+        "wins": 3
+      },
+      {
+        "month": 7,
+        "fixedProfit": 2754.449999999999,
+        "compProfit": 5750.185976363122,
+        "trades": 6,
+        "wins": 6
+      },
+      {
+        "month": 8,
+        "fixedProfit": 2716.350000000002,
+        "compProfit": 7397.975846786154,
+        "trades": 6,
+        "wins": 6
+      },
+      {
+        "month": 9,
+        "fixedProfit": 1551.6499999999978,
+        "compProfit": 5239.154449454974,
+        "trades": 7,
+        "wins": 6
+      },
+      {
+        "month": 10,
+        "fixedProfit": 200.54999999999927,
+        "compProfit": 693.5971995776708,
+        "trades": 3,
+        "wins": 1
+      },
+      {
+        "month": 11,
+        "fixedProfit": 1216.0999999999985,
+        "compProfit": 4782.322514279476,
+        "trades": 4,
+        "wins": 4
+      },
+      {
+        "month": 12,
+        "fixedProfit": 1084.8500000000022,
+        "compProfit": 4751.256825704513,
+        "trades": 7,
+        "wins": 4
+      },
+      {
+        "month": 13,
+        "fixedProfit": 2044.8999999999978,
+        "compProfit": 10459.700892804722,
+        "trades": 8,
+        "wins": 7
+      },
+      {
+        "month": 14,
+        "fixedProfit": 1107.8499999999985,
+        "compProfit": 6598.972995748511,
+        "trades": 5,
+        "wins": 4
+      },
+      {
+        "month": 15,
+        "fixedProfit": 1271.699999999997,
+        "compProfit": 8539.003223127598,
+        "trades": 6,
+        "wins": 4
+      },
+      {
+        "month": 16,
+        "fixedProfit": -153.25,
+        "compProfit": -1115.9868804417056,
+        "trades": 1,
+        "wins": 0
+      },
+      {
+        "month": 17,
+        "fixedProfit": 1045.699999999997,
+        "compProfit": 7680.275668483708,
+        "trades": 4,
+        "wins": 3
+      },
+      {
+        "month": 18,
+        "fixedProfit": 1797.550000000003,
+        "compProfit": 15182.680460668693,
+        "trades": 5,
+        "wins": 4
+      },
+      {
+        "month": 19,
+        "fixedProfit": 722.1500000000015,
+        "compProfit": 6797.894459363437,
+        "trades": 4,
+        "wins": 2
+      },
+      {
+        "month": 20,
+        "fixedProfit": 337.75,
+        "compProfit": 3452.5514331316226,
+        "trades": 2,
+        "wins": 2
+      },
+      {
+        "month": 21,
+        "fixedProfit": 523.4499999999971,
+        "compProfit": 5446.268719628846,
+        "trades": 5,
+        "wins": 3
+      },
+      {
+        "month": 22,
+        "fixedProfit": 964.8499999999913,
+        "compProfit": 10847.258248777682,
+        "trades": 7,
+        "wins": 4
+      },
+      {
+        "month": 23,
+        "fixedProfit": 614.9499999999971,
+        "compProfit": 7539.1598754425795,
+        "trades": 2,
+        "wins": 2
+      },
+      {
+        "month": 24,
+        "fixedProfit": 403.3500000000058,
+        "compProfit": 5162.761931586734,
+        "trades": 3,
+        "wins": 2
+      },
+      {
+        "month": 25,
+        "fixedProfit": 248.75,
+        "compProfit": 3218.6204567224777,
+        "trades": 4,
+        "wins": 2
+      },
+      {
+        "month": 26,
+        "fixedProfit": 184.34999999999854,
+        "compProfit": 2493.749496389355,
+        "trades": 3,
+        "wins": 2
+      },
+      {
+        "month": 27,
+        "fixedProfit": 1584.3499999999985,
+        "compProfit": 23393.844600170152,
+        "trades": 4,
+        "wins": 4
+      },
+      {
+        "month": 28,
+        "fixedProfit": 603.0499999999956,
+        "compProfit": 9911.021470795618,
+        "trades": 4,
+        "wins": 3
+      },
+      {
+        "month": 29,
+        "fixedProfit": 1595.6500000000015,
+        "compProfit": 29201.337566660863,
+        "trades": 5,
+        "wins": 4
+      },
+      {
+        "month": 30,
+        "fixedProfit": 571.1500000000015,
+        "compProfit": 11676.668206779548,
+        "trades": 2,
+        "wins": 2
+      },
+      {
+        "month": 31,
+        "fixedProfit": 860.8000000000029,
+        "compProfit": 18795.4846944343,
+        "trades": 5,
+        "wins": 4
+      },
+      {
+        "month": 32,
+        "fixedProfit": 1769.8999999999942,
+        "compProfit": 44180.01060502924,
+        "trades": 7,
+        "wins": 6
+      },
+      {
+        "month": 33,
+        "fixedProfit": 1309.3499999999985,
+        "compProfit": 37823.90800002153,
+        "trades": 3,
+        "wins": 3
+      },
+      {
+        "month": 34,
+        "fixedProfit": 264.09999999999854,
+        "compProfit": 8105.022080787283,
+        "trades": 2,
+        "wins": 1
+      },
+      {
+        "month": 35,
+        "fixedProfit": 645.25,
+        "compProfit": 21075.82275610615,
+        "trades": 2,
+        "wins": 2
+      },
+      {
+        "month": 36,
+        "fixedProfit": 1456.6500000000015,
+        "compProfit": 52450.27845228731,
+        "trades": 6,
+        "wins": 4
+      },
+      {
+        "month": 37,
+        "fixedProfit": 1063.5999999999985,
+        "compProfit": 43885.31461977278,
+        "trades": 5,
+        "wins": 5
+      },
+      {
+        "month": 38,
+        "fixedProfit": 427.79999999999563,
+        "compProfit": 18539.717846887303,
+        "trades": 9,
+        "wins": 4
+      },
+      {
+        "month": 39,
+        "fixedProfit": 1434.0499999999956,
+        "compProfit": 69245.58693297138,
+        "trades": 4,
+        "wins": 4
+      },
+      {
+        "month": 40,
+        "fixedProfit": 756.1999999999898,
+        "compProfit": 40589.362299385015,
+        "trades": 7,
+        "wins": 5
+      },
+      {
+        "month": 41,
+        "fixedProfit": 47.849999999998545,
+        "compProfit": 2280.6801789776655,
+        "trades": 6,
+        "wins": 3
+      },
+      {
+        "month": 42,
+        "fixedProfit": 538.9000000000015,
+        "compProfit": 30535.420827519614,
+        "trades": 5,
+        "wins": 3
+      },
+      {
+        "month": 43,
+        "fixedProfit": 488.1999999999971,
+        "compProfit": 29341.31834608584,
+        "trades": 2,
+        "wins": 1
+      }
+    ]
+  }
+}
