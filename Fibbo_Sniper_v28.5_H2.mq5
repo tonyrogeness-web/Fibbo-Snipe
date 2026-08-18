@@ -633,7 +633,7 @@ input double InpPerdaMaximaGlobalPct = 2.0, InpPerdaMaximaMoedaPct = 2.0, InpLuc
 input group "=== FIBONACCI 2.0 (ALTA PRECISÃO) ==="
 input bool   InpUseFiboPullback          = true;  // [FIBO 2.0] Ativar Retrações de Fibonacci
 input bool   InpSmartFiboSymbolFilter    = true;  // [ROTEAMENTO INTELIGENTE] Filtro Seletivo por Moeda (Núcleo de Ouro)
-input string InpFiboBlockedSymbols       = "EURGBP,EURAUD"; // Moedas com Fibo Desativada (Operam Apenas no FR)
+input string InpFiboBlockedSymbols       = "EURCAD,EURAUD,EURUSD,EURGBP"; // Moedas com Fibo Desativada (Operam Apenas no FR)
 input double InpFibLevelSell = 61.8, InpFibLevelBuy = 18.0, InpFibMinRange_ATR_Multi = 2.0, InpFib_MagneticZoneATRPct = 20.0;
 input bool   InpUseFiboH4_2   = true;  // Ativar segundo nível Fibo H4
 input double InpFibLevel2Sell = 38.2;  // Nível 2 Venda H4 (% retração)
@@ -790,7 +790,7 @@ double g_H4_ADX = 0;
 double g_CachedPlSymReal = 0, g_CachedPlTotReal = 0;
 double g_FloatingPlSym = 0, g_FloatingPlTot = 0;
 int g_CachedMaxSpread = 40;
-double g_CachedVolMed = 0;
+double g_CachedVolMed = 0, g_CachedVolMed_L2 = 0;
 
 double g_FastPlFloat = 0;
 int g_FastSpread = 0, g_FastSecsNext = 0, g_FastNPos = 0, g_FastNPosSymbol = 0;
@@ -1267,10 +1267,15 @@ void RefreshBarCache() {
    double adx_h4[]; ArraySetAsSeries(adx_h4, true);
    if(CopyBuffer(hADX_H4, 0, 1, 1, adx_h4) > 0) g_H4_ADX = adx_h4[0];
 
-   if(InpUseVolumeFilter || InpUseDynamicLiquidity) {
+   if(InpUseVolumeFilter || InpUseDynamicLiquidity || InpFR_RequireVolumeAbsorption) {
       long vol_b[]; ArraySetAsSeries(vol_b, true);
       if(CopyTickVolume(_Symbol, g_TF_L1, 1, 5, vol_b) >= 5) {
          double mv = 0; for(int i = 0; i < 5; i++) mv += (double)vol_b[i]; g_CachedVolMed = mv / 5.0;
+      } else all_copied = false;
+
+      long vol_l2[]; ArraySetAsSeries(vol_l2, true);
+      if(CopyTickVolume(_Symbol, TF_L2, 1, 5, vol_l2) >= 5) {
+         double mv2 = 0; for(int i = 0; i < 5; i++) mv2 += (double)vol_l2[i]; g_CachedVolMed_L2 = mv2 / 5.0;
       } else all_copied = false;
    }
 
@@ -1508,7 +1513,7 @@ bool IsVelaReversaoCompra(int shift, ENUM_TIMEFRAMES tf) {
 }
 
 // [PILAR 2 & 3] Validação de Penetração Máxima Anti-Violino e Absorção de Volume
-bool FR_ValidarVolumePenetracao(bool is_sell, int shift, ENUM_TIMEFRAMES tf, double level_price, double atr_val) {
+bool FR_ValidarVolumePenetracao(bool is_sell, int shift, ENUM_TIMEFRAMES tf, double level_price, double atr_val, double vol_med_ref = 0) {
    if(atr_val <= 0) return true;
    // [PILAR 2] Teto de penetração máxima (evita entrar contra rompimento violento)
    if(InpFR_MaxPenetrationATR > 0) {
@@ -1521,11 +1526,12 @@ bool FR_ValidarVolumePenetracao(bool is_sell, int shift, ENUM_TIMEFRAMES tf, dou
          if((level_price - l) > max_pen) return false;
       }
    }
-   // [PILAR 3] Absorção de volume institucional
-   if(InpFR_RequireVolumeAbsorption && g_CachedVolMed > 0) {
+   // [PILAR 3] Absorção de volume institucional (usa média compatível com o TF)
+   double ref_vol = (vol_med_ref > 0) ? vol_med_ref : ((tf == TF_L2 && g_CachedVolMed_L2 > 0) ? g_CachedVolMed_L2 : g_CachedVolMed);
+   if(InpFR_RequireVolumeAbsorption && ref_vol > 0) {
       long vb[1];
       if(CopyTickVolume(_Symbol, tf, shift, 1, vb) >= 1) {
-         if((double)vb[0] < (g_CachedVolMed * InpFR_MinVolumeRatio)) return false;
+         if((double)vb[0] < (ref_vol * InpFR_MinVolumeRatio)) return false;
       }
    }
    return true;
@@ -1876,7 +1882,7 @@ string ComputePanelHash() {
    // [BUG-M2 FIX] P&L flutuante adicionado ao hash — painel atualiza a cada R$0,10 de variação
    int pl_sym_dec = (int)(g_FloatingPlSym * 10);
    int pl_tot_dec = (int)(g_FloatingPlTot * 10);
-   return StringFormat("%d|%d|%d|%d|%d|%s|%s|%d|%d|%d|%d|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d",
+   return StringFormat("%d|%d|%d|%d|%d|%s|%s|%d|%d|%d|%d|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d",
       (int)g_ColPosicao,(int)g_ColTerminal,(int)g_ShowDiag,(int)g_ShowConfigPanel,g_DiagTab,
       g_ProximaNoticiaName,g_Log[0],
       g_NPosDay,g_NPosSwing,g_FastNPosSymbol,
@@ -1884,7 +1890,11 @@ string ComputePanelHash() {
       (int)g_LocalGlobalBlock,(int)g_LocalBlocked,(int)g_BotPaused,
       (int)g_ViewFluxo,(int)g_ViewFR,(int)g_ViewFibo,
       g_LinhasModo,g_ModoConfluencia,
-      pl_sym_dec, pl_tot_dec);
+      pl_sym_dec, pl_tot_dec,
+      (int)MathRound(g_CachedADX*10), (int)MathRound(g_CachedRSI*10),
+      (int)MathRound(g_CachedATR/_Point), g_FastSpread,
+      (int)MathRound(g_CachedLot*100), g_CachedTrendDir, g_CachedMedDir,
+      (int)g_LocalConsolidation);
 }
 
 void DesenharPainel() {
@@ -2314,8 +2324,21 @@ void DesenharPainelDiag() {
       bool c_a=p_UsePassaFiltroADXFibo?(g_H4_ADX>=cfg_ADX_MinLevel):true;
       int t_h4=ComputeTrendDir(hShortEMA_H4,hEMA_H4); bool c_t=(!p_UseTrendDirFibo || t_h4==1 || t_h4==-1);
       DROW_DYN("Uso Estratégia",u_b?"sim":"OFF",!u_b)DROW_DYN("Cooldown Fibo",c_c?"livre":"AGUARDAR",!c_c)DROW_DYN("Cálculo Níveis H4",c_l?"sim":"NÃO",!c_l)DROW_DYN("Tendência Macro H4",c_t?"alinhado":"NEUTRO",!c_t)DROW_DYN("Força H4 (ADX="+DoubleToString(g_H4_ADX,1)+")",c_a?"ok":"FRACO",!c_a)
-      string confl_val="OFF"; if(g_ModoConfluencia>0){ if(g_MG_BuyAllowed&&!g_MG_SellAllowed) confl_val="SO COMPRA"; else if(!g_MG_BuyAllowed&&g_MG_SellAllowed) confl_val="SO VENDA"; else confl_val="LIVRE"; } DROW_DYN("Filtro MktGlance",confl_val,false); string not_val=d_not?"BLOQUEADO":"LIVRE"; if(g_ProximaNoticiaName!=""&&g_ProximaNoticiaTime>TimeCurrent()){int m_l=(int)((g_ProximaNoticiaTime-TimeCurrent())/60); not_val=(d_not?"BLOQ ":"")+g_ProximaNoticiaName+" ("+IntegerToString(m_l)+"m)";} DROW_DYN("Filtro Notícia",not_val,d_not)
-      s_rdy=(!any_glb&&u_b&&c_c&&c_l&&c_a&&c_t);
+      bool confl_mg_ok = true; string confl_val="OFF";
+      if(g_ModoConfluencia>0){
+         if(t_h4 == 1) { confl_mg_ok = g_MG_BuyAllowed; confl_val = g_MG_BuyAllowed ? "COMPRA (OK)" : (g_MG_SellAllowed ? "BLOQ (SÓ VENDA)" : "BLOQ (EMA)"); }
+         else if(t_h4 == -1) { confl_mg_ok = g_MG_SellAllowed; confl_val = g_MG_SellAllowed ? "VENDA (OK)" : (g_MG_BuyAllowed ? "BLOQ (SÓ COMPRA)" : "BLOQ (EMA)"); }
+         else {
+            if(g_MG_BuyAllowed&&!g_MG_SellAllowed) confl_val="SÓ COMPRA";
+            else if(!g_MG_BuyAllowed&&g_MG_SellAllowed) confl_val="SÓ VENDA";
+            else if(g_MG_BuyAllowed&&g_MG_SellAllowed) confl_val="LIVRE";
+            else confl_val="BLOQUEADO";
+            confl_mg_ok = (g_MG_BuyAllowed || g_MG_SellAllowed);
+         }
+      }
+      DROW_DYN("Filtro MktGlance",confl_val,!confl_mg_ok);
+      string not_val=d_not?"BLOQUEADO":"LIVRE"; if(g_ProximaNoticiaName!=""&&g_ProximaNoticiaTime>TimeCurrent()){int m_l=(int)((g_ProximaNoticiaTime-TimeCurrent())/60); not_val=(d_not?"BLOQ ":"")+g_ProximaNoticiaName+" ("+IntegerToString(m_l)+"m)";} DROW_DYN("Filtro Notícia",not_val,d_not)
+      s_rdy=(!any_glb&&u_b&&c_c&&c_l&&c_a&&c_t&&confl_mg_ok);
    } else {
       bool u_r=InpUseFR, c_c=g_CachedFrCdOk, c_l=(g_CachedFRTop>0&&g_CachedFRFundo>0);
        bool dir_s_ok,dir_b_ok; GetFR_DirecaoOk(g_CachedMedDir,g_CachedRSI,dir_s_ok,dir_b_ok);
@@ -2511,7 +2534,6 @@ void DesenharPainelConfig() {
        else if(btn==PANEL_PREFIX+"CFG_btn_confl_2"){ g_ModoConfluencia=2; g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
        else if(btn==PANEL_PREFIX+"CFG_btn_confl_3"){ g_ModoConfluencia=3; g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
        else if(btn==PANEL_PREFIX+"CFG_btn_confl_4"){ g_ModoConfluencia=4; g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
-       else if(btn==PANEL_PREFIX+"CFG_btn_risk_04"){ g_PropMaxRiskPct=0.4; g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
        else if(btn==PANEL_PREFIX+"CFG_btn_risk_06"){ g_PropMaxRiskPct=0.6; g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
        else if(btn==PANEL_PREFIX+"CFG_btn_risk_10"){ g_PropMaxRiskPct=1.0; g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
        else if(btn==PANEL_PREFIX+"CFG_btn_risk_12"){ g_PropMaxRiskPct=1.2; g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
@@ -2635,7 +2657,9 @@ int OnInit() {
    else GlobalVariableSet("FS9_ModoConfl", g_ModoConfluencia);
    
    g_InitTime        = TimeCurrent();
-   g_GV_Blocked    = "Sniper_Blocked_" + _Symbol;
+   g_GV_Blocked     = "Sniper_Blocked_" + _Symbol + "_" + IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN));
+   g_GV_GlobalBlock = "Sniper_GlobalBlock_" + IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN));
+   g_GV_GlobalDay   = "Sniper_GlobalDay_" + IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN));
 
    trade.SetExpertMagicNumber(InpMagic);
    trade.SetDeviationInPoints(50);
@@ -3304,7 +3328,9 @@ void OnTick() {
          if(!be_triggered&&InpUseTrailStop&&g_CachedATR>0){
             double pos_atr=(StringFind(c_comm,"_L2")>=0||StringFind(c_comm,"_H4")>=0)?(g_L2_ATR>0?g_L2_ATR:g_CachedATR):g_CachedATR;
             double pos_trail_dist=pos_atr*InpTrail_ATR_Multi;
+            if(pos_trail_dist < stops_level) pos_trail_dist = stops_level + (_Point * 2.0);
             double step_trail=pos_atr*0.25;
+            if(step_trail < _Point) step_trail = _Point;
             if(posType==POSITION_TYPE_BUY){
                double nsl=NormalizeDouble(curr_bid-pos_trail_dist,_Digits);
                if(nsl>posOpen&&nsl>(posSL+step_trail)&&(curr_bid-nsl)>=stops_level) trade.PositionModify(ticket,nsl,posTP);
@@ -3461,8 +3487,8 @@ void OnTick() {
          bool m_buy =InpFR_RequireWickRejection?(iLow (_Symbol,g_TF_L1,1)<pL&&iClose(_Symbol,g_TF_L1,1)>pL&&IsVelaReversaoCompra(1,g_TF_L1)):(iLow(_Symbol,g_TF_L1,1)<pL&&iClose(_Symbol,g_TF_L1,1)>pL&&iClose(_Symbol,g_TF_L1,1)>iOpen(_Symbol,g_TF_L1,1));
          
          // [PILAR 2 & 3] Validação de Volume e Penetração Máxima no L1
-         bool vp_s_ok = FR_ValidarVolumePenetracao(true, 1, g_TF_L1, pH, g_CachedATR);
-         bool vp_b_ok = FR_ValidarVolumePenetracao(false, 1, g_TF_L1, pL, g_CachedATR);
+         bool vp_s_ok = FR_ValidarVolumePenetracao(true, 1, g_TF_L1, pH, g_CachedATR, g_CachedVolMed);
+         bool vp_b_ok = FR_ValidarVolumePenetracao(false, 1, g_TF_L1, pL, g_CachedATR, g_CachedVolMed);
          if(!vp_s_ok) m_sell = false;
          if(!vp_b_ok) m_buy  = false;
 
@@ -3562,8 +3588,8 @@ void OnTick() {
          bool m_buy =InpFR_RequireWickRejection?(iLow (_Symbol,TF_L2,1)<pL&&iClose(_Symbol,TF_L2,1)>pL&&IsVelaReversaoCompra(1,TF_L2)):(iLow(_Symbol,TF_L2,1)<pL&&iClose(_Symbol,TF_L2,1)>pL&&iClose(_Symbol,TF_L2,1)>iOpen(_Symbol,TF_L2,1));
          
          // [PILAR 2 & 3] Validação de Volume e Penetração Máxima no L2
-         bool vp_s_ok_l2 = FR_ValidarVolumePenetracao(true, 1, TF_L2, pH, l2_atr);
-         bool vp_b_ok_l2 = FR_ValidarVolumePenetracao(false, 1, TF_L2, pL, l2_atr);
+         bool vp_s_ok_l2 = FR_ValidarVolumePenetracao(true, 1, TF_L2, pH, l2_atr, g_CachedVolMed_L2);
+         bool vp_b_ok_l2 = FR_ValidarVolumePenetracao(false, 1, TF_L2, pL, l2_atr, g_CachedVolMed_L2);
          if(!vp_s_ok_l2) m_sell = false;
          if(!vp_b_ok_l2) m_buy  = false;
 
