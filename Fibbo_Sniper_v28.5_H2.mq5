@@ -3559,11 +3559,11 @@ void OnTick() {
             if(be_dist||be_tp1){
                if(posType==POSITION_TYPE_BUY&&posSL<(target_be_sl_buy)-(_Point*2)&&curr_bid>=(target_be_sl_buy+stops_level)){
                   double nsl = NormalizeDouble(target_be_sl_buy, _Digits);
-                  if(trade.PositionModify(ticket,nsl,posTP)){AddLog(StringFormat("BE+Lock (%s): Compra SL=%.5f.",be_tp1?"TP1":"Respiro",nsl));be_triggered=true;}
+                  if(trade.PositionModify(ticket,nsl,posTP)){AddLog(StringFormat("BE+Lock (%s): Compra SL=%.5f.",be_tp1?"TP1":"Respiro",nsl));be_triggered=true; posSL=nsl;}
                }
                else if(posType==POSITION_TYPE_SELL&&posSL>(target_be_sl_sell)+(_Point*2)&&curr_ask<=(target_be_sl_sell-stops_level)){
                   double nsl = NormalizeDouble(target_be_sl_sell, _Digits);
-                  if(trade.PositionModify(ticket,nsl,posTP)){AddLog(StringFormat("BE+Lock (%s): Venda SL=%.5f.",be_tp1?"TP1":"Respiro",nsl));be_triggered=true;}
+                  if(trade.PositionModify(ticket,nsl,posTP)){AddLog(StringFormat("BE+Lock (%s): Venda SL=%.5f.",be_tp1?"TP1":"Respiro",nsl));be_triggered=true; posSL=nsl;}
                }
             }
          }
@@ -3577,6 +3577,7 @@ void OnTick() {
                      double nsl = NormalizeDouble(lock_sl, _Digits);
                      if(trade.PositionModify(ticket, nsl, posTP)) {
                         AddLog(StringFormat("Mid-Channel Lock: Compra SL travado em +25%% do canal (%.5f).", nsl));
+                        posSL = nsl; // [FIX ITEM 3] Atualiza variável local posSL para o trailing não reverter
                      }
                   }
                }
@@ -3586,6 +3587,7 @@ void OnTick() {
                      double nsl = NormalizeDouble(lock_sl, _Digits);
                      if(trade.PositionModify(ticket, nsl, posTP)) {
                         AddLog(StringFormat("Mid-Channel Lock: Venda SL travado em +25%% do canal (%.5f).", nsl));
+                        posSL = nsl; // [FIX ITEM 3] Atualiza variável local posSL para o trailing não reverter
                      }
                   }
                }
@@ -3842,15 +3844,6 @@ void OnTick() {
              if(!g_MG_SellAllowed) fr2_cd_sell = false;
              if(!g_MG_BuyAllowed) fr2_cd_buy = false;
          }
-
-         // [BLINDAGEM 1] Trava Anti-Super-Tendência L2 (Bloqueia contra rali direcional ADX > 30)
-         if(InpFR_BlockAgainstSuperTrend && (l2_adx >= InpFR_SuperTrend_ADX || g_CachedADX_H4 >= InpFR_SuperTrend_ADX)) {
-             double e200_l2 = (g_MG_EMA200 > 0) ? g_MG_EMA200 : (g_MG_hEMA200 != INVALID_HANDLE ? g_MG_EMA200 : 0);
-             if(e200_l2 > 0) {
-                if(bid > e200_l2) { fr2_cd_sell = false; m_sell = false; } // Super-Alta: Proibido vender topo
-                if(ask < e200_l2) { fr2_cd_buy  = false; m_buy  = false; } // Super-Baixa: Proibido comprar fundo
-             }
-         }
          
          double pH=l2_top, pL=l2_bot;
          double mag_tol=GetFR_MagTol(l2_atr,l2_adx,TF_L2);
@@ -3863,6 +3856,15 @@ void OnTick() {
 
          bool m_sell=InpFR_RequireWickRejection?(iHigh(_Symbol,TF_L2,1)>pH&&iClose(_Symbol,TF_L2,1)<pH&&IsVelaReversaoVenda(1,TF_L2)):(iHigh(_Symbol,TF_L2,1)>pH&&iClose(_Symbol,TF_L2,1)<pH&&iClose(_Symbol,TF_L2,1)<iOpen(_Symbol,TF_L2,1));
          bool m_buy =InpFR_RequireWickRejection?(iLow (_Symbol,TF_L2,1)<pL&&iClose(_Symbol,TF_L2,1)>pL&&IsVelaReversaoCompra(1,TF_L2)):(iLow(_Symbol,TF_L2,1)<pL&&iClose(_Symbol,TF_L2,1)>pL&&iClose(_Symbol,TF_L2,1)>iOpen(_Symbol,TF_L2,1));
+
+         // [BLINDAGEM 1] Trava Anti-Super-Tendência L2 (Posicionada após a declaração de m_sell/m_buy e com g_H4_ADX)
+         if(InpFR_BlockAgainstSuperTrend && (l2_adx >= InpFR_SuperTrend_ADX || g_H4_ADX >= InpFR_SuperTrend_ADX)) {
+             double e200_l2 = (g_MG_EMA200 > 0) ? g_MG_EMA200 : (g_MG_hEMA200 != INVALID_HANDLE ? g_MG_EMA200 : 0);
+             if(e200_l2 > 0) {
+                if(bid > e200_l2) { fr2_cd_sell = false; m_sell = false; } // Super-Alta: Proibido vender topo
+                if(ask < e200_l2) { fr2_cd_buy  = false; m_buy  = false; } // Super-Baixa: Proibido comprar fundo
+             }
+         }
          
          // [PILAR 2 & 3] Validação de Volume e Penetração Máxima no L2
          bool vp_s_ok_l2 = FR_ValidarVolumePenetracao(true, 1, TF_L2, pH, l2_atr, g_CachedVolMed_L2);
