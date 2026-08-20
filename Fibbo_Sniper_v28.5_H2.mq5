@@ -572,7 +572,7 @@ enum ENUM_FR_MODE { FR_AGRESSIVO, FR_CONSERVADOR };
 input group "=== PERFIL E RISCO AUTOMATIZADO ==="
 input ENUM_PERFIL_OPERACIONAL InpPerfil = PERFIL_MODERADO; // [RECOMENDADO] Melhor equilíbrio lucro/segurança para 7 pares Forex
 input bool InpAutoRegimeSwitch = true;
-input double InpBaseRisk_L1 = 1.0;  // [CONSERVADOR] Risco base 1.0% por trade ($100 USD em 10k -> Win Cheio = +$235.00 USD)
+input double InpBaseRisk_L1 = 1.25; // [MEIO TERMO RECOMENDADO] Risco base 1.25% por trade ($125 USD em 10k -> Win Cheio = +$293.75 USD)
 input double InpMaxAutoRisk = 3.0;   // Teto máximo de risco automático (%)
 input double InpVolPartialPct = 50.0;
 input double InpTP_Parcial_Multi = 1.0; // [TP1 PARCIAL] 1.0x SL (+1.5% na Parcial)
@@ -643,7 +643,7 @@ input group "=== FILTROS ADICIONAIS ==="
 input bool InpUseADX = true;
 input int InpADX_Period = 14; 
 input bool InpUseFechamentoMoeda = true;
-input double InpPerdaMaximaGlobalPct = 2.0, InpPerdaMaximaMoedaPct = 2.0, InpLucroAlvoMoedaPct = 4.0; // Trava Loss 2.0% (Permite 2 stops) e Meta 4.0%
+input double InpPerdaMaximaGlobalPct = 2.5, InpPerdaMaximaMoedaPct = 2.5, InpLucroAlvoMoedaPct = 4.0; // Trava Loss 2.5% (Permite 2 stops cheios) e Meta 4.0%
 
 input group "=== FIBONACCI 2.0 (ALTA PRECISÃO - NÍVEIS 18%, 28%, 38.2%) ==="
 input bool   InpUseFiboPullback          = false; // [FIBO 2.0] Desativado (Modo Oficial: APENAS FR 100% Ativo)
@@ -694,12 +694,12 @@ input bool InpSendPushAlert = false, InpLogCSV = true;
 input group "=== MODO PROP FIRM (Blue Guardian / FTMO) ==="
 // DEIXE false NA CONTA PESSOAL. Ative apenas ao operar em Mesa Proprietária.
 input bool   InpPropFirmMode          = true;  // [OTIMIZADO PROP] Ativar Modo Mesa Proprietária
-input double InpPropMaxDailyLossPct   = 2.0;   // [SWEET SPOT] Perda Diária Máx. Prop 2.0% da conta (-$200 USD em 10k)
+input double InpPropMaxDailyLossPct   = 2.5;   // [MEIO TERMO RECOMENDADO] Perda Diária Máx. Prop 2.5% da conta (-$250 USD em 10k)
 input double InpPropFirmDailyLimitPct = 4.0;   // Teto Limite Diário da Mesa (%) (ex: 4.0% Blue Guardian, 5.0% FTMO)
 input double InpPropFirmMaxDDLimitPct = 10.0;  // Drawdown Máximo Total da Mesa (%) (10.0% Blue Guardian Trailing DD)
 input double InpPropFase1TargetPct    = 10.0;  // Meta Fase 1 Prop Firm (%) (ex: 10.0% Blue Guardian / FTMO)
 input double InpPropFase2TargetPct    = 4.0;   // Meta Fase 2 Prop Firm (%) (ex: 4.0% Blue Guardian, 5.0% FTMO)
-input double InpPropMaxRiskPct        = 1.0;   // [CONSERVADOR] Risco Máx. por Trade 1.0% ($100 USD em 10k)
+input double InpPropMaxRiskPct        = 1.25;  // [MEIO TERMO RECOMENDADO] Risco Máx. por Trade 1.25% ($125 USD em 10k)
 input int    InpPropMaxPos            = 2;     // [OTIMIZADO PROP] Máx. 2 Posições Simultâneas
 input double InpPropConsistencyPct    = 35.0;  // Limite Consistência (% lucro hoje vs período)
 
