@@ -2510,7 +2510,7 @@ void DesenharPainelDiag() {
    bool d_gblock=g_LocalGlobalBlock,d_block=g_LocalBlocked,d_pause=g_BotPaused,d_spr=(g_FastSpread>g_CachedMaxSpread),d_liq=IsLowLiquidityWindow(),d_osc=IsLowOscillationWindow(),d_not=g_CachedNoticiaBlock,d_cax=g_LocalConsolidation;
    bool d_maxpos = (g_FastNPos>=InpMaxSimultaneousOps || (g_NPosDay>=InpMaxDayTrades && g_NPosSwingFR>=InpMaxFRSwingTrades && g_NPosSwingFibo>=InpMaxFiboTrades));
    bool any_glb=(d_gblock||d_block||d_pause||d_session||d_maxpos||d_spr||d_liq||d_osc||d_not||d_cax);
-   color c_border=any_glb?CLR_RED:CLR_PURPLE; static int s_diag_h=250;
+   color c_border=any_glb?CLR_RED:CLR_PURPLE; static int s_diag_h=310;
    DPRECT("border",dpx-1,dpy-1,dpw+2,s_diag_h+2,CLR_LINE_HARD,(int)c_border,197);DPRECT("bg",dpx,dpy,dpw,s_diag_h,CLR_BG_BASE,-1,198);DPRECT("hdr_bg",dpx,dpy,dpw,2,CLR_PURPLE,-1,200);DPRECT("hdr_main",dpx,dpy+2,dpw,18,CLR_BG_HEADER,-1,199);DPLBL("hdr_ico",dlx,cur+4,"⚡",CLR_PURPLE,InpPanelFontSize,true);DPLBL("hdr_ttl",dlx+14,cur+4,"DIAGNÓSTICO MTF",CLR_TXT_WHITE,InpPanelFontSize,true);
    {string _bn=DP+"btn_close";if(ObjectFind(0,_bn)<0)ObjectCreate(0,_bn,OBJ_BUTTON,0,0,0);ObjectSetInteger(0,_bn,OBJPROP_XDISTANCE,drx-8);ObjectSetInteger(0,_bn,OBJPROP_YDISTANCE,cur+3);ObjectSetInteger(0,_bn,OBJPROP_XSIZE,16);ObjectSetInteger(0,_bn,OBJPROP_YSIZE,14);ObjectSetString(0,_bn,OBJPROP_TEXT,"✕");ObjectSetInteger(0,_bn,OBJPROP_BGCOLOR,CLR_BG_HEADER);ObjectSetInteger(0,_bn,OBJPROP_COLOR,CLR_TXT_LABEL);ObjectSetInteger(0,_bn,OBJPROP_BORDER_COLOR,CLR_LINE_HARD);ObjectSetString(0,_bn,OBJPROP_FONT,"Arial Bold");ObjectSetInteger(0,_bn,OBJPROP_FONTSIZE,8);ObjectSetInteger(0,_bn,OBJPROP_CORNER,CORNER_LEFT_UPPER);ObjectSetInteger(0,_bn,OBJPROP_SELECTABLE,false);ObjectSetInteger(0,_bn,OBJPROP_HIDDEN,true);ObjectSetInteger(0,_bn,OBJPROP_STATE,false);ObjectSetInteger(0,_bn,OBJPROP_ZORDER,310);}
    ObjectDelete(0, DP+"btn_tab_fl");
@@ -2585,8 +2585,26 @@ void DesenharPainelDiag() {
           else confl_val="LIVRE"; 
        } 
        DROW_DYN("Filtro MktGlance",confl_val,!confl_mg_ok)
+
+       // [BLINDAGEM 1] Diagnóstico de Super-Tendência ADX H4
+       bool super_bloq = false; string super_txt = "LIVRE";
+       if(InpFR_BlockAgainstSuperTrend) {
+          if(g_H4_ADX >= InpFR_SuperTrend_ADX && g_MG_EMA200 > 0) {
+             if(perto_topo && ask_c > g_MG_EMA200) { super_bloq = true; super_txt = "BLOQ (ALTA ADX>30)"; }
+             else if(!perto_topo && bid_c < g_MG_EMA200) { super_bloq = true; super_txt = "BLOQ (BAIXA ADX>30)"; }
+             else { super_txt = "LIVRE (ADX " + DoubleToString(g_H4_ADX, 1) + ")"; }
+          } else {
+             super_txt = "LIVRE (ADX " + DoubleToString(g_H4_ADX, 1) + ")";
+          }
+       } else super_txt = "DESATIVADO";
+       DROW_DYN("Anti-SuperTrend", super_txt, super_bloq);
+
+       // [BLINDAGEM 2 & 3] Pavio 40% e Mid-Channel Lock
+       DROW_DYN("Pavio Mínimo 40%", InpFR_RequireMinWick40 ? "ATIVO" : "OFF", false);
+       DROW_DYN("Mid-Channel Lock", InpFR_UseMidChannelLock ? "ATIVO" : "OFF", false);
+
        string not_val=d_not?"BLOQUEADO":"LIVRE"; if(g_ProximaNoticiaName!=""&&g_ProximaNoticiaTime>TimeCurrent()){int m_l=(int)((g_ProximaNoticiaTime-TimeCurrent())/60); not_val=(d_not?"BLOQ ":"")+g_ProximaNoticiaName+" ("+IntegerToString(m_l)+"m)";} DROW_DYN("Filtro Notícia",not_val,d_not)
-       s_rdy=(!any_glb&&u_r&&c_c&&c_l&&dir_lado_ok&&confl_mg_ok);
+       s_rdy=(!any_glb&&u_r&&c_c&&c_l&&dir_lado_ok&&confl_mg_ok&&!super_bloq);
    }
    cur+=4;
    for(int i=ridx;i<20;i++){string _id="r_"+IntegerToString(i);ObjectSetInteger(0,DP+_id+"_bg",OBJPROP_XDISTANCE,-1000);ObjectSetInteger(0,DP+_id+"_bg",OBJPROP_HIDDEN,true);ObjectSetInteger(0,DP+_id+"_l",OBJPROP_XDISTANCE,-1000);ObjectSetInteger(0,DP+_id+"_v",OBJPROP_XDISTANCE,-1000);}
