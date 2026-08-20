@@ -571,11 +571,11 @@ enum ENUM_FR_MODE { FR_AGRESSIVO, FR_CONSERVADOR };
 input group "=== PERFIL E RISCO AUTOMATIZADO ==="
 input ENUM_PERFIL_OPERACIONAL InpPerfil = PERFIL_MODERADO; // [RECOMENDADO] Melhor equilíbrio lucro/segurança para 7 pares Forex
 input bool InpAutoRegimeSwitch = true;
-input double InpBaseRisk_L1 = 1.5;  // [RECOMENDADO] Risco base 1.5% por trade ($150 USD em 10k -> Win Cheio = +$337.50 USD / +3.37%)
+input double InpBaseRisk_L1 = 1.5;  // [META 3-6%/MÊS] Risco base 1.5% ($150 USD em 10k -> Win Cheio = +$352.50 USD / +3.52%)
 input double InpMaxAutoRisk = 3.0;   // Teto máximo de risco automático (%)
 input double InpVolPartialPct = 50.0;
-input double InpTP_Parcial_Multi = 1.0;
-input double InpTP_Final_Multi = 3.5; // [ALVO ESTRUTURAL] TP2 em 3.5x (+3.5% no TP2 + 1.0% no TP1 = +4.5% no Win Cheio)
+input double InpTP_Parcial_Multi = 1.0; // [TP1 PARCIAL] 1.0x SL (+1.5% na Parcial)
+input double InpTP_Final_Multi = 3.5; // [ALVO ESTRUTURAL] TP2 em 3.5x (+5.25% no TP2 -> Média de +3.5% a +5.0% no trade completo)
 input int InpMagic = 111;
 input int InpMaxSimultaneousOps = 6; // Trava Global Máxima
 
@@ -698,7 +698,7 @@ input double InpPropFirmDailyLimitPct = 4.0;   // Teto Limite Diário da Mesa (%
 input double InpPropFirmMaxDDLimitPct = 10.0;  // Drawdown Máximo Total da Mesa (%) (10.0% Blue Guardian Trailing DD)
 input double InpPropFase1TargetPct    = 10.0;  // Meta Fase 1 Prop Firm (%) (ex: 10.0% Blue Guardian / FTMO)
 input double InpPropFase2TargetPct    = 4.0;   // Meta Fase 2 Prop Firm (%) (ex: 4.0% Blue Guardian, 5.0% FTMO)
-input double InpPropMaxRiskPct        = 1.2;   // [CENÁRIO C] Risco Máx. por Trade 1.2% ($120 USD em 10k)
+input double InpPropMaxRiskPct        = 1.5;   // [META 3-6%/MÊS] Risco Máx. por Trade 1.5% ($150 USD em 10k)
 input int    InpPropMaxPos            = 2;     // [OTIMIZADO PROP] Máx. 2 Posições Simultâneas
 input double InpPropConsistencyPct    = 35.0;  // Limite Consistência (% lucro hoje vs período)
 
