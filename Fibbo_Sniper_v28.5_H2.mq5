@@ -1156,6 +1156,7 @@ void ResetDiario() {
 
 void ComputeWinRate(string filter, int &wins, int &total) {
    wins = 0; total = 0;
+   if(MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_VISUAL_MODE)) return; // [TURBO TESTER] Pula varredura de histórico desnecessária
    MqlDateTime dt; TimeToStruct(TimeCurrent(), dt);
    dt.hour = 0; dt.min = 0; dt.sec = 0;
    HistorySelect(StructToTime(dt), TimeCurrent() + 1);
@@ -1472,7 +1473,7 @@ bool IsLowOscillationWindow() {
 }
 
 void EscreverCSV(string comment, double lot, double price, double sl, double tp) {
-   if(!InpLogCSV) return;
+   if(!InpLogCSV || (MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_VISUAL_MODE))) return; // [TURBO TESTER] Sem I/O de disco no backtest
    string date_str = TimeToString(TimeCurrent(), TIME_DATE); StringReplace(date_str, ".", ""); string filename = "FibboSniper_Trades_" + _Symbol + "_" + date_str + ".csv";
    bool needsHeader = !FileIsExist(filename); int fh = FileOpen(filename, FILE_WRITE|FILE_CSV|FILE_READ|FILE_ANSI, ';');
    if(fh != INVALID_HANDLE) {
