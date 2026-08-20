@@ -2613,7 +2613,8 @@ void DesenharPainelDiag() {
        DROW_DYN("Anti-SuperTrend", super_txt, super_bloq);
 
        // [BLINDAGEM 2 & 3] Pavio 40% e Mid-Channel Lock
-       DROW_DYN("Pavio Mínimo 40%", InpFR_RequireMinWick40 ? "ATIVO" : "OFF", false);
+       bool wick40_active = (InpFR_RequireMinWick40 && InpFR_RequireWickRejection);
+       DROW_DYN("Pavio Mínimo 40%", wick40_active ? "ATIVO" : "OFF", !wick40_active);
        DROW_DYN("Mid-Channel Lock", InpFR_UseMidChannelLock ? "ATIVO" : "OFF", false);
 
        string not_val=d_not?"BLOQUEADO":"LIVRE"; if(g_ProximaNoticiaName!=""&&g_ProximaNoticiaTime>TimeCurrent()){int m_l=(int)((g_ProximaNoticiaTime-TimeCurrent())/60); not_val=(d_not?"BLOQ ":"")+g_ProximaNoticiaName+" ("+IntegerToString(m_l)+"m)";} DROW_DYN("Filtro Notícia",not_val,d_not)
@@ -3915,7 +3916,7 @@ void OnTick() {
 
          // [BLINDAGEM 1] Trava Anti-Super-Tendência L2 (Posicionada após a declaração de m_sell/m_buy e com g_H4_ADX)
          if(InpFR_BlockAgainstSuperTrend && (l2_adx >= InpFR_SuperTrend_ADX || g_H4_ADX >= InpFR_SuperTrend_ADX)) {
-             double e200_l2 = (g_MG_EMA200 > 0) ? g_MG_EMA200 : (g_MG_hEMA200 != INVALID_HANDLE ? g_MG_EMA200 : 0);
+             double e200_l2 = (g_MG_EMA200 > 0) ? g_MG_EMA200 : 0;
              if(e200_l2 > 0) {
                 if(bid > e200_l2) { fr2_cd_sell = false; m_sell = false; } // Super-Alta: Proibido vender topo
                 if(ask < e200_l2) { fr2_cd_buy  = false; m_buy  = false; } // Super-Baixa: Proibido comprar fundo
