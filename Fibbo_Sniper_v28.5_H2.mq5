@@ -103,12 +103,13 @@ void AtualizarSensoresAnalise(ENUM_TIMEFRAMES tf_escolhido=PERIOD_CURRENT) {
    // ATR (Volatilidade/Distancia de Alvos)
    if(g_MG_hATR != INVALID_HANDLE && CopyBuffer(g_MG_hATR, 0, 0, 1, buf_atr) > 0) g_MG_ATR = SanitizeATR(buf_atr[0], g_MG_CurrentTF);
    
-   // CANAIS DE REGRESSAO (Tempo de inicio e fim)
-   g_MG_TimeMacroEnd = iTime(_Symbol, g_MG_CurrentTF, 0);
-   g_MG_TimeMacroStart = iTime(_Symbol, g_MG_CurrentTF, 150); // 150 velas para tras
+   // CANAIS DE REGRESSAO (Visualização Dinâmica no Timeframe ATUAL da tela: H4, H2, H1, etc.)
+   ENUM_TIMEFRAMES tf_vis = _Period; // Pega automaticamente o TF em que o gráfico estiver aberto
+   g_MG_TimeMacroEnd = iTime(_Symbol, tf_vis, 0);
+   g_MG_TimeMacroStart = iTime(_Symbol, tf_vis, 150); // 150 velas do TF atual da tela
    
-   g_MG_TimeMicroEnd = iTime(_Symbol, g_MG_CurrentTF, 0);
-   g_MG_TimeMicroStart = iTime(_Symbol, g_MG_CurrentTF, 45); // 45 velas para tras
+   g_MG_TimeMicroEnd = iTime(_Symbol, tf_vis, 0);
+   g_MG_TimeMicroStart = iTime(_Symbol, tf_vis, 45);  // 45 velas do TF atual da tela
    
    // FRACTAIS H4 (Suporte e Resistencia Curto Prazo)
    double bufFrUp[], bufFrDn[];
