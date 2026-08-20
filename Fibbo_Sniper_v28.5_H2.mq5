@@ -370,6 +370,8 @@ void AtualizarPermissoesConfluenciaMG() {
 }
 
 void DesenharLinhasAnalise() {
+   if(MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_VISUAL_MODE)) return;
+
    // [ITEM A FIX] Permissões de confluência SEMPRE calculadas, independente do modo visual
    AtualizarPermissoesConfluenciaMG();
 
@@ -1864,6 +1866,8 @@ void RecuperarHistoricoFiboVela() {
 }
 
 void DesenharLinhasChart() {
+   if(MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_VISUAL_MODE)) return;
+
    if(g_LocalGlobalBlock || g_LocalBlocked || g_BotPaused) return;
    bool is_lateral = IsMercadoLateral(); int t_dir = g_CachedTrendDir;
    color cor_h = C'28,85,58', cor_l = C'28,85,58'; string sym_h = is_lateral ? "▼" : "▲", sym_l = is_lateral ? "▲" : "▼";
@@ -2087,6 +2091,8 @@ string ComputePanelHash() {
 }
 
 void DesenharPainel() {
+   if(MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_VISUAL_MODE)) return;
+
    if(!InpShowPanel) return;
    int px=InpPanelX, py=InpPanelY, pw=PANEL_W, pad=10, lx=px+pad+4, rx=px+pw-pad;
    double adx_val=g_CachedADX, rsi_v=g_CachedRSI, atr_val=g_CachedATR; int tDir=g_CachedTrendDir, mDir=g_CachedMedDir, nPos=g_FastNPos;
@@ -2488,6 +2494,8 @@ PRow("reg",lx,rx,cur,"Regime  |  ADX "+DoubleToString(adx_val,1)+" (>="+StringFo
 }
 
 void DesenharPainelDiag() {
+   if(MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_VISUAL_MODE)) return;
+
    string DP=PANEL_PREFIX+"D_";
    if(!g_ShowDiag||!InpShowPanel){ int objs=ObjectsTotal(0,0,-1); for(int _i=objs-1;_i>=0;_i--){string _nm=ObjectName(0,_i,0,-1);if(StringFind(_nm,DP)==0)ObjectDelete(0,_nm);} return; }
 
@@ -2590,6 +2598,8 @@ void DesenharPainelDiag() {
 }
 
 void DesenharPainelConfig() {
+   if(MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_VISUAL_MODE)) return;
+
    string CP = PANEL_PREFIX + "CFG_";
    if(!g_ShowConfigPanel) {
       ObjectDelete(0, CP + "border"); ObjectDelete(0, CP + "bg");
@@ -2777,6 +2787,8 @@ void LimparLinhasOrdens() {
 }
 
 void DesenharLinhasOrdens() {
+   if(MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_VISUAL_MODE)) return;
+
    if(g_ViewZonas) { LimparLinhasOrdens(); return; } // [MODO ZEN] Oculta linhas de trade
    static int s_last_total = -1;
    double ask=SymbolInfoDouble(_Symbol,SYMBOL_ASK), bid=SymbolInfoDouble(_Symbol,SYMBOL_BID);
@@ -3120,6 +3132,8 @@ void LimparPainelPropFirm() {
 }
 
 void DesenharPainelPropFirm() {
+   if(MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_VISUAL_MODE)) return;
+
    if(!g_ShowPropFirmHUD || !InpPropFirmMode || !InpShowPanel) {
       LimparPainelPropFirm();
       return;
