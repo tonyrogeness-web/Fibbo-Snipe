@@ -696,7 +696,9 @@ input bool InpUseOscillationFilter = true;
 input double InpMinATRPts = 30.0; // [RECOMENDADO] 30 pts compatível com EURGBP/EURCHF de baixa volatilidade
 input bool InpUseNewsFilter = true;
 input int InpNewsMinutesBefore = 30, InpNewsMinutesAfter = 30;
-input bool InpSendPushAlert = false, InpLogCSV = true;
+input bool InpSendPushNotifications = true; // [PUSH MOBILE] Alertas em tempo real no Celular (App MT5)
+input bool InpUseAutoCompounding    = true; // [AUTO-COMPOUND] Recalcular lote dinamicamente sobre o Saldo Atual
+input bool InpSendPushAlert = true, InpLogCSV = true;
 
 input group "=== MODO PROP FIRM (Blue Guardian / FTMO) ==="
 // DEIXE false NA CONTA PESSOAL. Ative apenas ao operar em Mesa Proprietária.
@@ -1472,6 +1474,13 @@ bool IsLowOscillationWindow() {
    return false;
 }
 
+void EnviarPushNotification(string msg) {
+   if(!InpSendPushNotifications) return;
+   if(MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_VISUAL_MODE)) return;
+   string full_msg = StringFormat("[%s] Fibbo Sniper: %s", _Symbol, msg);
+   SendNotification(full_msg);
+}
+
 void EscreverCSV(string comment, double lot, double price, double sl, double tp) {
    if(!InpLogCSV || (MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_VISUAL_MODE))) return; // [TURBO TESTER] Sem I/O de disco no backtest
    string date_str = TimeToString(TimeCurrent(), TIME_DATE); StringReplace(date_str, ".", ""); string filename = "FibboSniper_Trades_" + _Symbol + "_" + date_str + ".csv";
@@ -1538,7 +1547,9 @@ bool AbrirBuy(double lot, double ask, double sl_pts, double tp1, double tp2, str
          AddLog("Aviso Corretora P2 (" + IntegerToString(trade.ResultRetcode()) + ")");
       }
    }
-   EscreverCSV(comment, lot, ask, norm_sl, norm_tp1); return true;
+   EscreverCSV(comment, lot, ask, norm_sl, norm_tp1);
+   EnviarPushNotification(StringFormat("🎯 COMPRA Aberta | Lote: %.2f | Preço: %.5f | SL: %.5f | TP1: %.5f | TP2: %.5f (%s)", lot, ask, norm_sl, norm_tp1, norm_tp2, comment));
+   return true;
 }
 
 bool AbrirSell(double lot, double bid, double sl_pts, double tp1, double tp2, string comment) {
@@ -1560,7 +1571,9 @@ bool AbrirSell(double lot, double bid, double sl_pts, double tp1, double tp2, st
          AddLog("Aviso Corretora P2 (" + IntegerToString(trade.ResultRetcode()) + ")");
       }
    }
-   EscreverCSV(comment, lot, bid, norm_sl, norm_tp1); return true;
+   EscreverCSV(comment, lot, bid, norm_sl, norm_tp1);
+   EnviarPushNotification(StringFormat("🎯 VENDA Aberta | Lote: %.2f | Preço: %.5f | SL: %.5f | TP1: %.5f | TP2: %.5f (%s)", lot, bid, norm_sl, norm_tp1, norm_tp2, comment));
+   return true;
 }
 
 bool FiltroCurtoPrazo(int direcao, int shift, ENUM_TIMEFRAMES tf, int hEMA_handle) {
@@ -3592,11 +3605,19 @@ void OnTick() {
             if(be_dist||be_tp1){
                if(posType==POSITION_TYPE_BUY&&posSL<(target_be_sl_buy)-(_Point*2)&&curr_bid>=(target_be_sl_buy+stops_level)){
                   double nsl = NormalizeDouble(target_be_sl_buy, _Digits);
-                  if(trade.PositionModify(ticket,nsl,posTP)){AddLog(StringFormat("BE+Lock (%s): Compra SL=%.5f.",be_tp1?"TP1":"Respiro",nsl));be_triggered=true; posSL=nsl;}
+                  if(trade.PositionModify(ticket,nsl,posTP)){
+                     AddLog(StringFormat("BE+Lock (%s): Compra SL=%.5f.",be_tp1?"TP1":"Respiro",nsl));
+                     be_triggered=true; posSL=nsl;
+                     EnviarPushNotification(StringFormat("🛡️ BREAK EVEN Ativado | Compra SL protegido em %.5f (%s)", nsl, be_tp1?"TP1 Parcial":"Respiro ATR"));
+                  }
                }
                else if(posType==POSITION_TYPE_SELL&&posSL>(target_be_sl_sell)+(_Point*2)&&curr_ask<=(target_be_sl_sell-stops_level)){
                   double nsl = NormalizeDouble(target_be_sl_sell, _Digits);
-                  if(trade.PositionModify(ticket,nsl,posTP)){AddLog(StringFormat("BE+Lock (%s): Venda SL=%.5f.",be_tp1?"TP1":"Respiro",nsl));be_triggered=true; posSL=nsl;}
+                  if(trade.PositionModify(ticket,nsl,posTP)){
+                     AddLog(StringFormat("BE+Lock (%s): Venda SL=%.5f.",be_tp1?"TP1":"Respiro",nsl));
+                     be_triggered=true; posSL=nsl;
+                     EnviarPushNotification(StringFormat("🛡️ BREAK EVEN Ativado | Venda SL protegido em %.5f (%s)", nsl, be_tp1?"TP1 Parcial":"Respiro ATR"));
+                  }
                }
             }
          }
@@ -3610,7 +3631,8 @@ void OnTick() {
                      double nsl = NormalizeDouble(lock_sl, _Digits);
                      if(trade.PositionModify(ticket, nsl, posTP)) {
                         AddLog(StringFormat("Mid-Channel Lock: Compra SL travado em +25%% do canal (%.5f).", nsl));
-                        posSL = nsl; // [FIX ITEM 3] Atualiza variável local posSL para o trailing não reverter
+                        posSL = nsl;
+                        EnviarPushNotification(StringFormat("🔒 MID-LOCK Ativado (+25%% Canal) | Compra SL travado no lucro em %.5f", nsl));
                      }
                   }
                }
@@ -3620,7 +3642,8 @@ void OnTick() {
                      double nsl = NormalizeDouble(lock_sl, _Digits);
                      if(trade.PositionModify(ticket, nsl, posTP)) {
                         AddLog(StringFormat("Mid-Channel Lock: Venda SL travado em +25%% do canal (%.5f).", nsl));
-                        posSL = nsl; // [FIX ITEM 3] Atualiza variável local posSL para o trailing não reverter
+                        posSL = nsl;
+                        EnviarPushNotification(StringFormat("🔒 MID-LOCK Ativado (+25%% Canal) | Venda SL travado no lucro em %.5f", nsl));
                      }
                   }
                }
@@ -4104,4 +4127,20 @@ void OnTick() {
 //  FIM — Fibbo_Sniper_v28.5_H2.mq5
 //+------------------------------------------------------------------+
 
-
+//===================================================================
+// MONITORAMENTO DE TRANSAÇÕES E NOTIFICAÇÕES DE FECHAMENTO
+//===================================================================
+void OnTradeTransaction(const MqlTradeTransaction& trans, const MqlTradeRequest& request, const MqlTradeResult& result) {
+   if(trans.type == TRADE_TRANSACTION_DEAL_ADD) {
+      if(HistoryDealSelect(trans.deal)) {
+         if(HistoryDealGetInteger(trans.deal, DEAL_ENTRY) == DEAL_ENTRY_OUT && 
+            HistoryDealGetInteger(trans.deal, DEAL_MAGIC) == InpMagic && 
+            HistoryDealGetString(trans.deal, DEAL_SYMBOL) == _Symbol) {
+            double profit = HistoryDealGetDouble(trans.deal, DEAL_PROFIT) + HistoryDealGetDouble(trans.deal, DEAL_SWAP) + HistoryDealGetDouble(trans.deal, DEAL_COMMISSION);
+            string comm = HistoryDealGetString(trans.deal, DEAL_COMMENT);
+            string result_txt = (profit >= 0) ? StringFormat("💰 WIN! +$%.2f USD", profit) : StringFormat("🛑 LOSS! -$%.2f USD", MathAbs(profit));
+            EnviarPushNotification(StringFormat("🏁 Trade Finalizado (%s) | %s", comm, result_txt));
+         }
+      }
+   }
+}
