@@ -295,7 +295,8 @@ void DesenharLegendaAnaliseMG(int count, string &texts[], color &clrs[], string 
 
 //+------------------------------------------------------------------+
 //| [ROTEAMENTO INTELIGENTE] Verifica se Fibo é permitida no par     |
-//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+
 
 void LimparObjetosVisuaisMG() {
    int total = ObjectsTotal(0, 0, -1);
