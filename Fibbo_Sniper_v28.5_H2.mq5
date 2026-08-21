@@ -1978,7 +1978,7 @@ void DesenharLinhasChart() {
    bool d_mpos = (g_FastNPos >= InpMaxSimultaneousOps || (g_NPosDay >= InpMaxDayTrades && g_NPosSwingFR >= InpMaxFRSwingTrades && g_NPosSwingFibo >= InpMaxFiboTrades));
    bool glb_blocked = (d_sess || d_spr || d_liq || d_osc || d_not || d_cax || d_mpos);
 
-   bool fr_all_ok = (!glb_blocked && InpUseFR && g_CachedFrCdOk && (g_CachedFRTop > 0 && g_CachedFRFundo > 0));
+   bool fr_all_ok = (!glb_blocked && IsFRAllowedForCurrentSymbol() && !TemPosicaoAbertaNoAtivoComPrefixo("Fluxo_") && g_CachedFrCdOk && (g_CachedFRTop > 0 && g_CachedFRFundo > 0));
    
    // [SINCRONIA TOTAL] Fibo só é all_ok se ADX (Força H4) e Tendência H4 estiverem rigorosamente válidos
    bool fb_adx_ok   = p_UsePassaFiltroADXFibo ? (g_H4_ADX >= cfg_ADX_MinLevel) : true;
@@ -2400,7 +2400,8 @@ void DesenharPainel() {
    bool d_gblk=g_LocalGlobalBlock, d_blk=g_LocalBlocked, d_pau=g_BotPaused, d_spr2=(cur_spread>max_spread), d_liq2=IsLowLiquidityWindow(), d_osc2=IsLowOscillationWindow(), d_not2=g_CachedNoticiaBlock, d_cax2=g_LocalConsolidation;
    bool d_mpos = (g_FastNPos>=InpMaxSimultaneousOps || (g_NPosDay>=InpMaxDayTrades && g_NPosSwingFR>=InpMaxFRSwingTrades && g_NPosSwingFibo>=InpMaxFiboTrades));
    bool glb_blocked=(d_gblk||d_blk||d_pau||d_sess||d_mpos||d_spr2||d_liq2||d_osc2||d_not2||d_cax2);
-   bool u_r2=InpUseFR, c_c2=g_CachedFrCdOk, c_l2=(g_CachedFRTop>0&&g_CachedFRFundo>0);
+   bool u_r2=IsFRAllowedForCurrentSymbol(), c_c2=g_CachedFrCdOk, c_l2=(g_CachedFRTop>0&&g_CachedFRFundo>0);
+   bool tem_flx_pos = TemPosicaoAbertaNoAtivoComPrefixo("Fluxo_");
    bool dir_s_ok2,dir_b_ok2; GetFR_DirecaoOk(g_CachedMedDir,g_CachedRSI,dir_s_ok2,dir_b_ok2);
    double ask_curr_main = SymbolInfoDouble(_Symbol, SYMBOL_ASK), bid_curr_main = SymbolInfoDouble(_Symbol, SYMBOL_BID);
    bool perto_topo_main = (g_CachedFRTop > 0 && MathAbs(g_CachedFRTop - ask_curr_main) < MathAbs(bid_curr_main - g_CachedFRFundo));
@@ -2409,14 +2410,16 @@ void DesenharPainel() {
 
    bool super_bloq_main = (InpFR_BlockAgainstSuperTrend && g_H4_ADX >= InpFR_SuperTrend_ADX && ((perto_topo_main && ask_curr_main > g_MG_EMA200 && g_MG_EMA200 > 0) || (!perto_topo_main && bid_curr_main < g_MG_EMA200 && g_MG_EMA200 > 0)));
 
-   bool fr_all_ok=(!glb_blocked && !super_bloq_main && u_r2 && c_c2 && c_l2 && dir_lado_main_ok && confl_mg_main_ok);
+   bool fr_all_ok=(!glb_blocked && !super_bloq_main && !tem_flx_pos && u_r2 && c_c2 && c_l2 && dir_lado_main_ok && confl_mg_main_ok);
 
    string s_fr_req = ""; color c_fr_req_clr = C'0,230,118';
    if(fr_all_ok) {
       s_fr_req = "Requisitos: ✔ 100% OK (PRONTO)"; c_fr_req_clr = C'0,230,118'; // Verde Neon
    } else {
       c_fr_req_clr = C'255,107,107'; // [OPÇÃO 1: SALMÃO CLARO] Alto contraste e leitura perfeita no fundo dark
-      if(!u_r2) s_fr_req = "Requisitos: ✖ Estratégia Desativada";
+      if(!InpUseFR) s_fr_req = "Requisitos: ✖ Estratégia Desativada";
+      else if(!u_r2) s_fr_req = "Requisitos: ✖ Bloqueado por Roteamento";
+      else if(tem_flx_pos) s_fr_req = "Requisitos: ✖ Posição Fluxo Ativa";
       else if(d_pau) s_fr_req = "Requisitos: ✖ Robô Pausado";
       else if(d_sess) s_fr_req = "Requisitos: ✖ Fora da Sessão (10-22h)";
       else if(d_spr2) s_fr_req = StringFormat("Requisitos: ✖ Spread Alto (%d/%d pts)", cur_spread, max_spread);
@@ -2462,7 +2465,7 @@ void DesenharPainel() {
       color bg_fr    = is_ready_fr ? C'38,14,18'  : CLR_BG_CARD;
       color txt_fr   = is_ready_fr ? CLR_TXT_WHITE : CLR_TXT_LABEL;
       color c_fr_st  = is_ready_fr ? (g_ReadyFR ? C'0,255,136' : C'255,193,7') : CLR_MUTED;
-      string s_fr2   = !InpUseFR ? "OFF" : (is_ready_fr ? (g_ReadyFR ? "⚡ DISPARO IMEDIATO!" : ("ARMADO! (Fecha em " + s_next + ")")) : "Prox.Vela");
+      string s_fr2   = !InpUseFR ? "OFF" : (!u_r2 ? "OFF (Roteamento)" : (tem_flx_pos ? "BLOQ (Fluxo)" : (is_ready_fr ? (g_ReadyFR ? "⚡ DISPARO IMEDIATO!" : ("ARMADO! (Fecha em " + s_next + ")")) : "Prox.Vela")));
       
       string tf_fr_card = StringSubstr(EnumToString(g_TF_L1), 7);
       PModuleCardH("fr_card",ox,cur,cw_fr,ch,c_fr_ico,bg_fr);
