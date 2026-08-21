@@ -597,6 +597,11 @@ input double InpTP_Max_Multi = 5.0;
 input group "=== FILTRO DE VIABILIDADE (TIRO CURTO) ==="
 input double InpMinViableATR_Multi = 1.0;
 
+input group "=== ROTEAMENTO INTELIGENTE POR ATIVO ==="
+input bool   InpSmartRouting         = true; // [ROTEAMENTO AUTOMÁTICO] Ativa estratégia campeã por moeda
+input string InpFR_BlockedSymbols    = "GBPJPY,GBPUSD"; // Pares bloqueados para FR (Pares de Tendência/Libra)
+input string InpFluxo_BlockedSymbols = "EURUSD,EURJPY,EURCAD,NZDUSD,EURAUD,AUDNZD"; // Pares bloqueados para Fluxo (Pares de Canal)
+
 input group "=== TENDÊNCIA E FLUXO ==="
 input bool InpAutoTF = true;             // Seleção Automática de TF por Moeda (Opção C Mestre)
 input ENUM_TIMEFRAMES InpTF = PERIOD_H2; // [H2 CAMPEÃO CENÁRIO 3] TF de execução 2 HORAS (H2)
@@ -3828,6 +3833,47 @@ void OnTimer() {
 //===================================================================
 // ON TICK — MOTOR PRINCIPAL SATÉLITE v28.4
 //===================================================================
+
+//===================================================================
+// ROTEAMENTO INTELIGENTE POR SÍMBOLO & EXCLUSÃO MÚTUA
+//===================================================================
+bool IsSymbolInList(string symbol_to_check, string list) {
+   if(list == "") return false;
+   string sym = symbol_to_check;
+   StringToUpper(sym);
+   string l = list;
+   StringToUpper(l);
+   return (StringFind(l, sym) >= 0);
+}
+
+bool IsFRAllowedForCurrentSymbol() {
+   if(!InpUseFR) return false;
+   if(!InpSmartRouting) return true;
+   if(IsSymbolInList(_Symbol, InpFR_BlockedSymbols)) return false;
+   return true;
+}
+
+bool IsFluxoAllowedForCurrentSymbol() {
+   if(!InpUseFluxo) return false;
+   if(!InpSmartRouting) return true;
+   if(IsSymbolInList(_Symbol, InpFluxo_BlockedSymbols)) return false;
+   return true;
+}
+
+bool TemPosicaoAbertaNoAtivoComPrefixo(string prefix) {
+   for(int i = PositionsTotal() - 1; i >= 0; i--) {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket > 0 && PositionGetString(POSITION_SYMBOL) == _Symbol) {
+         long magic = PositionGetInteger(POSITION_MAGIC);
+         if(magic == InpMagic) {
+            string comment = PositionGetString(POSITION_COMMENT);
+            if(StringFind(comment, prefix) >= 0) return true;
+         }
+      }
+   }
+   return false;
+}
+
 void OnTick() {
    VerificarTravasFinanceiras();
    if(g_PropBreachLocked || g_LocalGlobalBlock || g_LocalBlocked) return;
@@ -4014,7 +4060,7 @@ void OnTick() {
    //================================================================
    // MOTOR 1: FLUXO L1
    //================================================================
-   if(InpUseFluxo && !block_day) {
+   if(IsFluxoAllowedForCurrentSymbol() && !block_day && !TemPosicaoAbertaNoAtivoComPrefixo("FR_")) {
       if(g_CachedFluxoCdOk) {
          double canal_high=g_CachedCanalHigh, canal_low=g_CachedCanalLow; bool vol_ok=true;
          if(InpUseVolumeFilter&&g_CachedVolMed>0){long vb[1];if(CopyTickVolume(_Symbol,g_TF_L1,0,1,vb)>=1)vol_ok=((double)vb[0]>g_CachedVolMed);}
@@ -4066,7 +4112,7 @@ void OnTick() {
    //================================================================
    // MOTOR 2: FALSO ROMPIMENTO L1 + L2
    //================================================================
-   if(InpUseFR) {
+   if(IsFRAllowedForCurrentSymbol() && !TemPosicaoAbertaNoAtivoComPrefixo("Fluxo_")) {
       // --- CAMADA 1 (Day Trade) ---
       if(!block_day && g_CachedFRTop>0&&g_CachedFRFundo>0&&g_CachedFrCdOk){
          double pH=g_CachedFRTop, pL=g_CachedFRFundo;
