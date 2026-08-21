@@ -2020,13 +2020,17 @@ void DesenharLinhasChart() {
       DrawVisualLine("FR_Topo",  g_CachedFRTop,   clr_fr_muted, clr_fr_active, "▼", "[FR " + tf_fr_str + "] Topo",  fr_show_top, fr_top_hl);
       DrawVisualLine("FR_Fundo", g_CachedFRFundo, clr_fr_muted, clr_fr_active, "▲", "[FR " + tf_fr_str + "] Fundo", fr_show_bot, fr_bot_hl);
 
-      // [GATILHO LASER DINÂMICO]: Linha pontilhada verde neon indicando o ponto de disparo do ATR quando armado
+      // [GATILHO LASER DINÂMICO]: Linha pontilhada verde discreto indicando o ponto de disparo quando perto do nível
       double fr_trig_offset = (g_CachedATR > 0) ? (g_CachedATR * 0.15) : (_Point * 20.0);
       double trig_sell_p = g_CachedFRTop - fr_trig_offset;
       double trig_buy_p  = g_CachedFRFundo + fr_trig_offset;
       
-      bool show_trig_sell = (fr_top_hl && !is_zen && draw_lines && g_FastNPosSymbol == 0);
-      bool show_trig_buy  = (fr_bot_hl && !is_zen && draw_lines && g_FastNPosSymbol == 0);
+      double dist_top_pts = (g_CachedFRTop > 0) ? MathAbs(g_CachedFRTop - ask) / _Point : 99999;
+      double dist_bot_pts = (g_CachedFRFundo > 0) ? MathAbs(bid - g_CachedFRFundo) / _Point : 99999;
+      double trig_proximity_zone = (g_CachedATR > 0) ? (g_CachedATR / _Point) * 1.2 : 150.0;
+
+      bool show_trig_sell = (fr_top_hl && dist_top_pts <= trig_proximity_zone && !is_zen && draw_lines && g_FastNPosSymbol == 0);
+      bool show_trig_buy  = (fr_bot_hl && dist_bot_pts <= trig_proximity_zone && !is_zen && draw_lines && g_FastNPosSymbol == 0);
 
       datetime c_t_l1 = iTime(_Symbol, g_TF_L1, 0);
       int sec_l1_gat = (int)((c_t_l1 + PeriodSeconds(g_TF_L1)) - TimeCurrent());
