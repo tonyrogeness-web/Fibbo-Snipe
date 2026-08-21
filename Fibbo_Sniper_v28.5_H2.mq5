@@ -1983,7 +1983,8 @@ void DesenharLinhasChart() {
    color clr_fr_muted  = C'140,55,55';
    color clr_fr_active = C'235,75,75';
    string tf_fr_str = StringSubstr(EnumToString(g_TF_L1), 7); // ex: H2, H4, H1
-   if(InpUseFR && g_CachedFRTop > 0) {
+   bool show_fr_lines = IsFRAllowedForCurrentSymbol() && InpUseFR && (g_CachedFRTop > 0 && g_CachedFRFundo > 0);
+   if(show_fr_lines) {
       DrawVisualLine("FR_Topo",  g_CachedFRTop,   clr_fr_muted, clr_fr_active, "▼", "[FR " + tf_fr_str + "] Topo",  fr_show_top, fr_top_hl);
       DrawVisualLine("FR_Fundo", g_CachedFRFundo, clr_fr_muted, clr_fr_active, "▲", "[FR " + tf_fr_str + "] Fundo", fr_show_bot, fr_bot_hl);
 
@@ -2661,7 +2662,9 @@ void DesenharPainelDiag() {
       DROW_DYN("Filtro Notícia", not_val, d_not);
       s_rdy = (!any_glb && u_flx && is_rot_ok && c_canal && t_ok && confl_mg_ok && c_parede);
    } else {
-      bool u_r=InpUseFR, c_c=g_CachedFrCdOk, c_l=(g_CachedFRTop>0&&g_CachedFRFundo>0);
+      bool is_fr_rot_ok = IsFRAllowedForCurrentSymbol();
+      bool u_r = InpUseFR && is_fr_rot_ok; // No XAUUSD, GBPJPY, GBPUSD -> Uso da Estratégia FR é NÃO
+      bool c_c = g_CachedFrCdOk, c_l = (g_CachedFRTop > 0 && g_CachedFRFundo > 0);
        bool dir_s_ok,dir_b_ok; GetFR_DirecaoOk(g_CachedMedDir,g_CachedRSI,dir_s_ok,dir_b_ok);
        double ask_c=SymbolInfoDouble(_Symbol,SYMBOL_ASK), bid_c=SymbolInfoDouble(_Symbol,SYMBOL_BID);
        bool perto_topo=(g_CachedFRTop>0 && MathAbs(g_CachedFRTop-ask_c) < MathAbs(bid_c-g_CachedFRFundo));
@@ -2669,7 +2672,8 @@ void DesenharPainelDiag() {
        bool dir_lado_ok = perto_topo ? dir_s_ok : dir_b_ok;
        bool c_dr=InpFR_Direct_Entries;
 
-       DROW_DYN("Uso Estratégia",u_r?"sim":"OFF",!u_r)
+       DROW_DYN("Uso Estratégia", u_r ? "sim" : "não", !u_r)
+       DROW_DYN("Roteamento Ativo", is_fr_rot_ok ? "PERMITIDO" : "BLOQUEADO (PAR TENDÊNCIA)", !is_fr_rot_ok)
        DROW_DYN("Cooldown L1",c_c?"livre":"AGUARDAR",!c_c)
        DROW_DYN("Mapeamento L1",c_l?"sim":"NÃO",!c_l)
        DROW_DYN("Dir. L1 OK",dir_lado_ok?"sim":(perto_topo?"NEUTRO (TOPO)":"NEUTRO (FUNDO)"),!dir_lado_ok)
@@ -3721,7 +3725,15 @@ bool IsSymbolInList(string symbol_to_check, string list) {
    StringToUpper(sym);
    string l = list;
    StringToUpper(l);
-   return (StringFind(l, sym) >= 0);
+   string items[];
+   int count = StringSplit(l, ',', items);
+   for(int i = 0; i < count; i++) {
+      string itm = items[i];
+      StringTrimLeft(itm);
+      StringTrimRight(itm);
+      if(itm != "" && (StringFind(sym, itm) >= 0 || StringFind(itm, sym) >= 0)) return true;
+   }
+   return false;
 }
 
 bool IsFRAllowedForCurrentSymbol() {
