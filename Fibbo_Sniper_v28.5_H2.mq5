@@ -2599,10 +2599,12 @@ void DesenharPainelDiag() {
    DPRECT("border",dpx-1,dpy-1,dpw+2,s_diag_h+2,CLR_LINE_HARD,(int)c_border,197);DPRECT("bg",dpx,dpy,dpw,s_diag_h,CLR_BG_BASE,-1,198);DPRECT("hdr_bg",dpx,dpy,dpw,2,CLR_PURPLE,-1,200);DPRECT("hdr_main",dpx,dpy+2,dpw,18,CLR_BG_HEADER,-1,199);DPLBL("hdr_ico",dlx,cur+4,"⚡",CLR_PURPLE,InpPanelFontSize,true);DPLBL("hdr_ttl",dlx+14,cur+4,"DIAGNÓSTICO MTF",CLR_TXT_WHITE,InpPanelFontSize,true);
    {string _bn=DP+"btn_close";if(ObjectFind(0,_bn)<0)ObjectCreate(0,_bn,OBJ_BUTTON,0,0,0);ObjectSetInteger(0,_bn,OBJPROP_XDISTANCE,drx-8);ObjectSetInteger(0,_bn,OBJPROP_YDISTANCE,cur+3);ObjectSetInteger(0,_bn,OBJPROP_XSIZE,16);ObjectSetInteger(0,_bn,OBJPROP_YSIZE,14);ObjectSetString(0,_bn,OBJPROP_TEXT,"✕");ObjectSetInteger(0,_bn,OBJPROP_BGCOLOR,CLR_BG_HEADER);ObjectSetInteger(0,_bn,OBJPROP_COLOR,CLR_TXT_LABEL);ObjectSetInteger(0,_bn,OBJPROP_BORDER_COLOR,CLR_LINE_HARD);ObjectSetString(0,_bn,OBJPROP_FONT,"Arial Bold");ObjectSetInteger(0,_bn,OBJPROP_FONTSIZE,8);ObjectSetInteger(0,_bn,OBJPROP_CORNER,CORNER_LEFT_UPPER);ObjectSetInteger(0,_bn,OBJPROP_SELECTABLE,false);ObjectSetInteger(0,_bn,OBJPROP_HIDDEN,true);ObjectSetInteger(0,_bn,OBJPROP_STATE,false);ObjectSetInteger(0,_bn,OBJPROP_ZORDER,310);}
    ObjectDelete(0, DP+"btn_tab_fl");
-   bool _is_flx_pair = IsFluxoAllowedForCurrentSymbol() && !IsFRAllowedForCurrentSymbol();
-   bool _is_fr_pair  = IsFRAllowedForCurrentSymbol() && !IsFluxoAllowedForCurrentSymbol();
-   if(_is_flx_pair && g_DiagTab != 2) g_DiagTab = 2; // Em pares de Fluxo (GBPJPY, GBPUSD, XAUUSD), abre direto na aba FLUXO!
-   else if(_is_fr_pair && g_DiagTab != 1) g_DiagTab = 1; // Em pares de FR (EURUSD, EURCAD, NZDUSD etc), abre direto na aba F.ROMP!
+   static string s_last_diag_sym = "";
+   if(_Symbol != s_last_diag_sym) {
+      if(IsFluxoAllowedForCurrentSymbol() && !IsFRAllowedForCurrentSymbol()) g_DiagTab = 2; // GBPJPY, GBPUSD, XAUUSD iniciam no Fluxo
+      else g_DiagTab = 1; // EURUSD, EURCAD etc iniciam no FR
+      s_last_diag_sym = _Symbol;
+   }
    DPRECT("tab_bg",dpx,cur,dpw,24,CLR_BG_SECTION,-1,199);int tw=(dpw-16)/2;
    {string _bn=DP+"btn_tab_fr";if(ObjectFind(0,_bn)<0)ObjectCreate(0,_bn,OBJ_BUTTON,0,0,0);ObjectSetInteger(0,_bn,OBJPROP_XDISTANCE,dlx);ObjectSetInteger(0,_bn,OBJPROP_YDISTANCE,cur+2);ObjectSetInteger(0,_bn,OBJPROP_XSIZE,tw);ObjectSetInteger(0,_bn,OBJPROP_YSIZE,20);ObjectSetString(0,_bn,OBJPROP_TEXT,"F.ROMP"+m_dir);ObjectSetInteger(0,_bn,OBJPROP_BGCOLOR,g_DiagTab==1?CLR_RED:CLR_BG_CARD);ObjectSetInteger(0,_bn,OBJPROP_COLOR,g_DiagTab==1?CLR_TXT_WHITE:CLR_TXT_LABEL);ObjectSetInteger(0,_bn,OBJPROP_BORDER_COLOR,CLR_LINE_HARD);ObjectSetString(0,_bn,OBJPROP_FONT,"Arial Bold");ObjectSetInteger(0,_bn,OBJPROP_FONTSIZE,8);ObjectSetInteger(0,_bn,OBJPROP_CORNER,CORNER_LEFT_UPPER);ObjectSetInteger(0,_bn,OBJPROP_SELECTABLE,false);ObjectSetInteger(0,_bn,OBJPROP_HIDDEN,true);ObjectSetInteger(0,_bn,OBJPROP_STATE,false);ObjectSetInteger(0,_bn,OBJPROP_ZORDER,310);}
    {string _bn=DP+"btn_tab_fl";if(ObjectFind(0,_bn)<0)ObjectCreate(0,_bn,OBJ_BUTTON,0,0,0);ObjectSetInteger(0,_bn,OBJPROP_XDISTANCE,dlx+tw+2);ObjectSetInteger(0,_bn,OBJPROP_YDISTANCE,cur+2);ObjectSetInteger(0,_bn,OBJPROP_XSIZE,tw);ObjectSetInteger(0,_bn,OBJPROP_YSIZE,20);ObjectSetString(0,_bn,OBJPROP_TEXT,"FLUXO"+m_dir);ObjectSetInteger(0,_bn,OBJPROP_BGCOLOR,g_DiagTab==2?C'0,180,255':CLR_BG_CARD);ObjectSetInteger(0,_bn,OBJPROP_COLOR,g_DiagTab==2?CLR_TXT_WHITE:CLR_TXT_LABEL);ObjectSetInteger(0,_bn,OBJPROP_BORDER_COLOR,CLR_LINE_HARD);ObjectSetString(0,_bn,OBJPROP_FONT,"Arial Bold");ObjectSetInteger(0,_bn,OBJPROP_FONTSIZE,8);ObjectSetInteger(0,_bn,OBJPROP_CORNER,CORNER_LEFT_UPPER);ObjectSetInteger(0,_bn,OBJPROP_SELECTABLE,false);ObjectSetInteger(0,_bn,OBJPROP_HIDDEN,true);ObjectSetInteger(0,_bn,OBJPROP_STATE,false);ObjectSetInteger(0,_bn,OBJPROP_ZORDER,310);}
@@ -2624,15 +2626,15 @@ void DesenharPainelDiag() {
    DPLBL("st_hdr",dlx,cur+2,"REQUISITOS - "+s_name+":",c_name,InpPanelFontSize,true);cur+=20;
    bool is_lat=IsMercadoLateral(), s_rdy=false; int tD=g_CachedTrendDir;
    if(g_DiagTab==2){
-      bool u_flx = InpUseFluxo;
       bool is_rot_ok = IsFluxoAllowedForCurrentSymbol();
+      bool u_flx = InpUseFluxo && is_rot_ok; // Se bloqueado para a moeda, uso da estratégia é NÃO
       bool c_canal = (g_CachedCanalHigh > 0 && g_CachedCanalLow > 0);
       bool c_vol = (InpUseVolumeFilter && g_CachedVolMed > 0);
       bool c_parede = !g_FluxoParedeAtiva;
       bool t_ok = (g_CachedTrendDir != 0);
       string t_txt = (g_CachedTrendDir == 1) ? "ALTA (COMPRA)" : ((g_CachedTrendDir == -1) ? "BAIXA (VENDA)" : "NEUTRO");
       
-      DROW_DYN("Uso Estratégia", u_flx ? "sim" : "OFF", !u_flx);
+      DROW_DYN("Uso Estratégia", u_flx ? "sim" : "não", !u_flx);
       DROW_DYN("Roteamento Ativo", is_rot_ok ? "PERMITIDO" : "BLOQUEADO (PAR RANGE)", !is_rot_ok);
       DROW_DYN("Canal L1 (H2)", c_canal ? "MAPEADO (OK)" : "AGUARDANDO", !c_canal);
       DROW_DYN("Tendência / EMA", t_txt, !t_ok);
