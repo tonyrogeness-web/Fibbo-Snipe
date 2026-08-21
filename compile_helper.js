@@ -1,13 +1,14 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
+const path = require('path');
 
 const editor = 'C:\\Program Files\\MetaTrader 5\\metaeditor64.exe';
-const target = 'Fibbo_Sniper_v28.5_H2.mq5';
-const logFile = 'compile_audit.log';
+const target = path.join(__dirname, 'Fibbo_Sniper_v28.5_H2.mq5');
+const logFile = path.join(__dirname, 'compile.log');
 
 try {
     if (fs.existsSync(logFile)) fs.unlinkSync(logFile);
-    execSync(`"${editor}" /compile:${target} /log:${logFile}`);
+    execSync(`"${editor}" /compile:"${target}" /log:"${logFile}"`);
 } catch(e) {
     // metaeditor may exit with code 0 or 1
 }
