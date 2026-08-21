@@ -2013,8 +2013,14 @@ void DesenharLinhasChart() {
       bool show_trig_sell = (fr_top_hl && !is_zen && draw_lines && g_FastNPosSymbol == 0);
       bool show_trig_buy  = (fr_bot_hl && !is_zen && draw_lines && g_FastNPosSymbol == 0);
 
-      DrawVisualLine("FR_Gat_V", trig_sell_p, C'0,230,118', C'0,255,128', "⚡", "⚡ GATILHO VENDA", show_trig_sell, false);
-      DrawVisualLine("FR_Gat_C", trig_buy_p,  C'0,230,118', C'0,255,128', "⚡", "⚡ GATILHO COMPRA", show_trig_buy,  false);
+      datetime c_t_l1 = iTime(_Symbol, g_TF_L1, 0);
+      int sec_l1_gat = (int)((c_t_l1 + PeriodSeconds(g_TF_L1)) - TimeCurrent());
+      if(sec_l1_gat < 0) sec_l1_gat = 0;
+      int m_l1_gat = sec_l1_gat / 60, s_l1_gat = sec_l1_gat % 60;
+      string s_gat_time = StringFormat("(Fecha em %02dm %02ds)", m_l1_gat, s_l1_gat);
+
+      DrawVisualLine("FR_Gat_V", trig_sell_p, C'0,230,118', C'0,255,128', "⚡", "⚡ GATILHO VENDA " + s_gat_time, show_trig_sell, false);
+      DrawVisualLine("FR_Gat_C", trig_buy_p,  C'0,230,118', C'0,255,128', "⚡", "⚡ GATILHO COMPRA " + s_gat_time, show_trig_buy,  false);
    } else {
       DrawVisualLine("FR_Topo",  0, clrNONE, clrNONE, "", "", false, false);
       DrawVisualLine("FR_Fundo", 0, clrNONE, clrNONE, "", "", false, false);
@@ -2422,7 +2428,7 @@ void DesenharPainel() {
       color bg_fr    = is_ready_fr ? C'38,14,18'  : CLR_BG_CARD;
       color txt_fr   = is_ready_fr ? CLR_TXT_WHITE : CLR_TXT_LABEL;
       color c_fr_st  = is_ready_fr ? (g_ReadyFR ? C'0,255,136' : C'255,193,7') : CLR_MUTED;
-      string s_fr2   = !InpUseFR ? "OFF" : (is_ready_fr ? (g_ReadyFR ? "GATILHO!" : "ARMADO!") : "Prox.Vela");
+      string s_fr2   = !InpUseFR ? "OFF" : (is_ready_fr ? (g_ReadyFR ? "⚡ DISPARO IMEDIATO!" : ("ARMADO! (Fecha em " + s_next + ")")) : "Prox.Vela");
       
       string tf_fr_card = StringSubstr(EnumToString(g_TF_L1), 7);
       PModuleCardH("fr_card",ox,cur,cw_fr,ch,c_fr_ico,bg_fr);
@@ -3262,8 +3268,8 @@ void DesenharWidgetStatusMercado() {
    
    int chart_w = (int)ChartGetInteger(0, CHART_WIDTH_IN_PIXELS);
    if(chart_w <= 0) chart_w = 1200;
-   int card_w = 210, card_h = 66;
-   int card_x = chart_w - card_w - 90; // 90px da borda direita da tela, livre da escala do MT5
+   int card_w = 210, card_h = 84;
+   int card_x = chart_w - card_w - 12; // Encostado na borda direita do gráfico
    int card_y = 20;
    
    // Fundo do Card (usando CORNER_LEFT_UPPER para sincronização exata de coordenadas)
@@ -3330,6 +3336,30 @@ void DesenharWidgetStatusMercado() {
    ObjectSetInteger(0, t3_lbl, OBJPROP_ANCHOR, ANCHOR_LEFT_UPPER);
    ObjectSetString(0, t3_lbl, OBJPROP_TEXT, "PROXIMO:");
 
+   // "VELA [TF]:"
+   datetime cur_bar_t = iTime(_Symbol, _Period, 0);
+   int sec_left_chart = (int)((cur_bar_t + PeriodSeconds(_Period)) - TimeCurrent());
+   if(sec_left_chart < 0) sec_left_chart = 0;
+   int tf_c_h = sec_left_chart / 3600;
+   int tf_c_m = (sec_left_chart % 3600) / 60;
+   int tf_c_s = sec_left_chart % 60;
+   string tf_chart_name = StringSubstr(EnumToString(_Period), 7);
+   string tf_time_chart_str = (tf_c_h > 0) ? StringFormat("%dh %02dm %02ds", tf_c_h, tf_c_m, tf_c_s) : StringFormat("%02dm %02ds", tf_c_m, tf_c_s);
+
+   string t4_lbl = PFX + "T4_LBL";
+   if(ObjectFind(0, t4_lbl) < 0) {
+      ObjectCreate(0, t4_lbl, OBJ_LABEL, 0, 0, 0);
+      ObjectSetInteger(0, t4_lbl, OBJPROP_CORNER, CORNER_LEFT_UPPER);
+      ObjectSetString(0, t4_lbl, OBJPROP_FONT, "Calibri");
+      ObjectSetInteger(0, t4_lbl, OBJPROP_FONTSIZE, 9);
+      ObjectSetInteger(0, t4_lbl, OBJPROP_ZORDER, 11);
+      ObjectSetInteger(0, t4_lbl, OBJPROP_COLOR, C'120,130,145');
+   }
+   ObjectSetInteger(0, t4_lbl, OBJPROP_XDISTANCE, card_x + 12);
+   ObjectSetInteger(0, t4_lbl, OBJPROP_YDISTANCE, card_y + 62);
+   ObjectSetInteger(0, t4_lbl, OBJPROP_ANCHOR, ANCHOR_LEFT_UPPER);
+   ObjectSetString(0, t4_lbl, OBJPROP_TEXT, "VELA " + tf_chart_name + ":");
+
    // Coluna Direita de Valores (DENTRO do Card, alinhada à direita do card)
    // "▪ EA ONLINE"
    string t1 = PFX + "T1";
@@ -3375,6 +3405,21 @@ void DesenharWidgetStatusMercado() {
    ObjectSetInteger(0, t3_val, OBJPROP_YDISTANCE, card_y + 44);
    ObjectSetInteger(0, t3_val, OBJPROP_ANCHOR, ANCHOR_RIGHT_UPPER);
    ObjectSetString(0, t3_val, OBJPROP_TEXT, nextStr);
+
+   // Valor Tempo Vela ("1h 24m 15s")
+   string t4_val = PFX + "T4_VAL";
+   if(ObjectFind(0, t4_val) < 0) {
+      ObjectCreate(0, t4_val, OBJ_LABEL, 0, 0, 0);
+      ObjectSetInteger(0, t4_val, OBJPROP_CORNER, CORNER_LEFT_UPPER);
+      ObjectSetString(0, t4_val, OBJPROP_FONT, "Calibri Bold");
+      ObjectSetInteger(0, t4_val, OBJPROP_FONTSIZE, 9);
+      ObjectSetInteger(0, t4_val, OBJPROP_ZORDER, 11);
+   }
+   ObjectSetInteger(0, t4_val, OBJPROP_XDISTANCE, card_x + card_w - 12);
+   ObjectSetInteger(0, t4_val, OBJPROP_YDISTANCE, card_y + 62);
+   ObjectSetInteger(0, t4_val, OBJPROP_ANCHOR, ANCHOR_RIGHT_UPPER);
+   ObjectSetInteger(0, t4_val, OBJPROP_COLOR, C'0,225,255');
+   ObjectSetString(0, t4_val, OBJPROP_TEXT, tf_time_chart_str);
 }
 
 //===================================================================
