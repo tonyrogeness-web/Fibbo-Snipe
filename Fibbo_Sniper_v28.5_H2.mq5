@@ -1888,7 +1888,7 @@ void DrawVisualText(string name, datetime t, double price, string text, color cl
    ObjectSetInteger(0, on, OBJPROP_COLOR, clr);
 }
 
-void DrawVisualLine(string name, double price, color clr_muted, color clr_active, string sym, string tip, bool show=true, bool highlight=false) {
+void DrawVisualLine(string name, double price, color clr_muted, color clr_active, string sym, string tip, bool show=true, bool highlight=false, int anchor=ANCHOR_LEFT_LOWER) {
    string oh = "SniperLine_"+name, ot = "SniperText_"+name;
    if(price <= 0 || !show || g_LinhasModo == 2) { ObjectDelete(0,oh); ObjectDelete(0,ot); return; }
    datetime ta = iTime(_Symbol, _Period, 0) + (datetime)(PeriodSeconds(_Period)*3);
@@ -1904,15 +1904,15 @@ void DrawVisualLine(string name, double price, color clr_muted, color clr_active
    if(ObjectFind(0,ot) < 0) { 
       ObjectCreate(0,ot,OBJ_TEXT,0,ta,price); 
       ObjectSetString(0,ot,OBJPROP_FONT,"Arial Bold"); 
-      ObjectSetInteger(0,ot,OBJPROP_FONTSIZE,9); 
-      ObjectSetInteger(0,ot,OBJPROP_ANCHOR,ANCHOR_LEFT_LOWER);
+      ObjectSetInteger(0,ot,OBJPROP_FONTSIZE,8); 
+      ObjectSetInteger(0,ot,OBJPROP_ANCHOR,anchor);
       ObjectSetInteger(0,ot,OBJPROP_BACK,false); 
       ObjectSetInteger(0,ot,OBJPROP_SELECTABLE,false); 
       ObjectSetInteger(0,ot,OBJPROP_HIDDEN,true); 
    }
-   ObjectSetInteger(0,ot,OBJPROP_FONTSIZE,9);
+   ObjectSetInteger(0,ot,OBJPROP_FONTSIZE,8);
    ObjectSetString(0,ot,OBJPROP_FONT,"Arial Bold");
-   ObjectSetInteger(0,ot,OBJPROP_ANCHOR,ANCHOR_LEFT_LOWER);
+   ObjectSetInteger(0,ot,OBJPROP_ANCHOR,anchor);
    ObjectSetDouble(0,ot,OBJPROP_PRICE,price); 
    ObjectSetInteger(0,ot,OBJPROP_TIME,ta); 
    ObjectSetInteger(0,ot,OBJPROP_COLOR,line_clr); 
@@ -2034,8 +2034,12 @@ void DesenharLinhasChart() {
       string lbl_gat_v = "⚡ GATILHO VENDA " + s_gat_time;
       string lbl_gat_c = "⚡ GATILHO COMPRA " + s_gat_time;
 
-      DrawVisualLine("FR_Gat_V", trig_sell_p, C'0,230,118', C'0,255,128', lbl_gat_v, lbl_gat_v, show_trig_sell, true);
-      DrawVisualLine("FR_Gat_C", trig_buy_p,  C'0,230,118', C'0,255,128', lbl_gat_c, lbl_gat_c, show_trig_buy,  true);
+      color clr_trig_discreto = C'38,165,115'; // Verde suave / discreto institucional
+
+      // VENDA: Âncora ANCHOR_LEFT_UPPER para o texto ficar ABAIXO da linha verde (longe da linha vermelha superior)
+      // COMPRA: Âncora ANCHOR_LEFT_LOWER para o texto ficar ACIMA da linha verde (longe da linha vermelha inferior)
+      DrawVisualLine("FR_Gat_V", trig_sell_p, clr_trig_discreto, clr_trig_discreto, lbl_gat_v, lbl_gat_v, show_trig_sell, false, ANCHOR_LEFT_UPPER);
+      DrawVisualLine("FR_Gat_C", trig_buy_p,  clr_trig_discreto, clr_trig_discreto, lbl_gat_c, lbl_gat_c, show_trig_buy,  false, ANCHOR_LEFT_LOWER);
    } else {
       DrawVisualLine("FR_Topo",  0, clrNONE, clrNONE, "", "", false, false);
       DrawVisualLine("FR_Fundo", 0, clrNONE, clrNONE, "", "", false, false);
@@ -2184,7 +2188,8 @@ string ComputePanelHash() {
    // [BUG-M2 FIX] P&L flutuante adicionado ao hash — painel atualiza a cada R$0,10 de variação
    int pl_sym_dec = (int)(g_FloatingPlSym * 10);
    int pl_tot_dec = (int)(g_FloatingPlTot * 10);
-   return StringFormat("%d|%d|%d|%d|%d|%s|%s|%d|%d|%d|%d|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d",
+   int cur_sec = (int)(TimeCurrent() % 86400);
+   return StringFormat("%d|%d|%d|%d|%d|%s|%s|%d|%d|%d|%d|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d",
       (int)g_ColPosicao,(int)g_ColTerminal,(int)g_ShowDiag,(int)g_ShowConfigPanel,g_DiagTab,
       g_ProximaNoticiaName,g_Log[0],
       g_NPosDay,g_NPosSwing,g_FastNPosSymbol,
@@ -2196,7 +2201,7 @@ string ComputePanelHash() {
       (int)MathRound(g_CachedADX*10), (int)MathRound(g_CachedRSI*10),
       (int)MathRound(g_CachedATR/_Point), g_FastSpread,
       (int)MathRound(g_CachedLot*100), g_CachedTrendDir, g_CachedMedDir,
-      (int)g_LocalConsolidation);
+      (int)g_LocalConsolidation, cur_sec);
 }
 
 void DesenharPainel() {
