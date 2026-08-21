@@ -2551,18 +2551,18 @@ void DesenharPainel() {
 
          // Linha 1: Tipo de Posição / Lote e P&L
          PLabel("bta_n", px+pad+4, cur, (c_posType==POSITION_TYPE_BUY?"▲ COMPRA":"▼ VENDA")+" "+DoubleToString(c_lot,2)+" ("+c_comm+")", (c_posType==POSITION_TYPE_BUY)?CLR_TEAL:CLR_RED, InpPanelFontSize, true);
-         PLabelR("bta_pnl", rx-6, cur, pnl_str, pnl_clr, InpPanelFontSize+1, true); cur+=15;
+         PLabelR("bta_pnl", rx-10, cur, pnl_str, pnl_clr, InpPanelFontSize+1, true); cur+=15;
          
          // Linha 2: Entrada e SL Real
          string sl_txt = (c_posSL>0) ? (DoubleToString(c_posSL,_Digits)+" (-$"+DoubleToString(rsk_usd,0)+")") : "———";
          PLabel("bta_ent", px+pad+4, cur, "Entrada: "+DoubleToString(c_posOpen,_Digits), CLR_TXT_PRIMARY, InpPanelFontSize);
-         PLabelR("bta_sl", rx-6, cur, "SL: "+sl_txt, (c_posSL>0)?CLR_RED:CLR_TXT_LABEL, InpPanelFontSize); cur+=15;
+         PLabelR("bta_sl", rx-10, cur, "SL: "+sl_txt, (c_posSL>0)?CLR_RED:CLR_TXT_LABEL, InpPanelFontSize); cur+=15;
 
          // Linha 3: TP1 e TP2 Reais
          string tp1_txt = DoubleToString(tp1_price,_Digits)+" (+"+DoubleToString(tp1_p_pct,1)+"%)";
          string tp2_txt = DoubleToString(tp2_price,_Digits)+" (+"+DoubleToString(tp2_p_pct,1)+"%)";
          PLabel("bta_tp1", px+pad+4, cur, "TP1 (1.0x): "+tp1_txt, CLR_TEAL, InpPanelFontSize);
-         PLabelR("bta_tp2", rx-6, cur, "TP2 ("+DoubleToString(eff_tp2_m,1)+"x): "+tp2_txt, CLR_TEAL, InpPanelFontSize); cur+=16;
+         PLabelR("bta_tp2", rx-10, cur, "TP2 ("+DoubleToString(eff_tp2_m,1)+"x): "+tp2_txt, CLR_TEAL, InpPanelFontSize); cur+=16;
       } else {
          ObjectDelete(0,PANEL_PREFIX+"bg_bata");ObjectDelete(0,PANEL_PREFIX+"bta_n");ObjectDelete(0,PANEL_PREFIX+"R_bta_pnl");
          ObjectDelete(0,PANEL_PREFIX+"bta_ent");ObjectDelete(0,PANEL_PREFIX+"R_bta_sl");
@@ -2582,15 +2582,15 @@ void DesenharPainel() {
 
       // Linha 1: Status e B.E. Armado
       PLabel("bta_n", px+pad+4, cur, "Status: Aguardando setup Sniper (H2)", CLR_TXT_WHITE, InpPanelFontSize, false);
-      PLabelR("bta_pnl", rx-6, cur, "🛡 B.E. Armado", CLR_TEAL, InpPanelFontSize, true); cur+=15;
+      PLabelR("bta_pnl", rx-10, cur, "🛡 B.E. Armado", CLR_TEAL, InpPanelFontSize, true); cur+=15;
       
       // Linha 2: Entrada e SL Fixos
       PLabel("bta_ent", px+pad+4, cur, "Entrada: ———", CLR_TXT_LABEL, InpPanelFontSize);
-      PLabelR("bta_sl", rx-6, cur, "SL: ———", CLR_TXT_LABEL, InpPanelFontSize); cur+=15;
+      PLabelR("bta_sl", rx-10, cur, "SL: ———", CLR_TXT_LABEL, InpPanelFontSize); cur+=15;
 
       // Linha 3: TP1 e TP2 Fixos
       PLabel("bta_tp1", px+pad+4, cur, "TP1 (1.0x): ———", CLR_TXT_LABEL, InpPanelFontSize);
-      PLabelR("bta_tp2", rx-6, cur, "TP2 ("+DoubleToString(eff_tp2_m,1)+"x): ———", CLR_TXT_LABEL, InpPanelFontSize); cur+=16;
+      PLabelR("bta_tp2", rx-10, cur, "TP2 ("+DoubleToString(eff_tp2_m,1)+"x): ———", CLR_TXT_LABEL, InpPanelFontSize); cur+=16;
    }
 
    // [PROP] Seção Prop Firm no painel (só visível quando InpPropFirmMode = true)
