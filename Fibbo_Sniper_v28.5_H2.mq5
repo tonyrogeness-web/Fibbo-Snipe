@@ -2003,10 +2003,8 @@ void DesenharLinhasChart() {
    bool perto_topo_draw = (dist_top_pts < dist_bot_pts);
 
    // Linha só vira CONTÍNUA (SOLID) se TODOS os requisitos do lado ativo estiverem válidos e NÃO estiver em Modo ZEN
-   bool fr_top_hl = !is_zen && fr_all_ok && perto_topo_draw && !super_bloq_s && fr_dir_sell && fr_sell_confl_ok && 
-                    (g_ReadyFR_Sell || (dist_top_pts <= trig_proximity_zone));
-   bool fr_bot_hl = !is_zen && fr_all_ok && !perto_topo_draw && !super_bloq_b && fr_dir_buy && fr_buy_confl_ok && 
-                    (g_ReadyFR_Buy  || (dist_bot_pts <= trig_proximity_zone));
+   bool fr_top_hl = !is_zen && fr_all_ok && perto_topo_draw && !super_bloq_s && fr_dir_sell && fr_sell_confl_ok;
+   bool fr_bot_hl = !is_zen && fr_all_ok && !perto_topo_draw && !super_bloq_b && fr_dir_buy && fr_buy_confl_ok;
    
    bool fr_show_top = false, fr_show_bot = false;
    if(draw_lines) {
@@ -2026,13 +2024,13 @@ void DesenharLinhasChart() {
       DrawVisualLine("FR_Topo",  g_CachedFRTop,   clr_fr_muted, clr_fr_active, "▼", "[FR " + tf_fr_str + "] Topo",  fr_show_top, fr_top_hl);
       DrawVisualLine("FR_Fundo", g_CachedFRFundo, clr_fr_muted, clr_fr_active, "▲", "[FR " + tf_fr_str + "] Fundo", fr_show_bot, fr_bot_hl);
 
-      // [GATILHO LASER DINÂMICO]: Linha pontilhada verde discreto indicando o ponto de disparo quando perto do nível
+      // [GATILHO LASER DINÂMICO]: Linha pontilhada verde discreto indicando o ponto de disparo quando armado
       double fr_trig_offset = (g_CachedATR > 0) ? (g_CachedATR * 0.15) : (_Point * 20.0);
       double trig_sell_p = g_CachedFRTop - fr_trig_offset;
       double trig_buy_p  = g_CachedFRFundo + fr_trig_offset;
 
-      bool show_trig_sell = (fr_top_hl && dist_top_pts <= trig_proximity_zone && !is_zen && draw_lines && g_FastNPosSymbol == 0);
-      bool show_trig_buy  = (fr_bot_hl && dist_bot_pts <= trig_proximity_zone && !is_zen && draw_lines && g_FastNPosSymbol == 0);
+      bool show_trig_sell = (fr_top_hl && !is_zen && draw_lines && g_FastNPosSymbol == 0);
+      bool show_trig_buy  = (fr_bot_hl && !is_zen && draw_lines && g_FastNPosSymbol == 0);
 
       datetime c_t_l1 = iTime(_Symbol, g_TF_L1, 0);
       int sec_l1_gat = (int)((c_t_l1 + PeriodSeconds(g_TF_L1)) - TimeCurrent());
