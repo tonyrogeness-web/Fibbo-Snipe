@@ -2899,9 +2899,9 @@ void DesenharPainelConfig() {
        else if(btn==PANEL_PREFIX+"CFG_btn_tp_20"){ g_TP_Final_Multi=2.0; g_LucroAlvoPct=3.0; GlobalVariableSet("FS9_TP_Multi_" + sym_login, 2.0); GlobalVariableSet("FS9_LucroAlvo_" + sym_login, 3.0); g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
        else if(btn==PANEL_PREFIX+"CFG_btn_tp_30"){ g_TP_Final_Multi=3.0; g_LucroAlvoPct=4.5; GlobalVariableSet("FS9_TP_Multi_" + sym_login, 3.0); GlobalVariableSet("FS9_LucroAlvo_" + sym_login, 4.5); g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
        else if(btn==PANEL_PREFIX+"CFG_btn_tp_35"){ g_TP_Final_Multi=3.5; g_LucroAlvoPct=5.0; GlobalVariableSet("FS9_TP_Multi_" + sym_login, 3.5); GlobalVariableSet("FS9_LucroAlvo_" + sym_login, 5.0); g_PanelHash=""; DesenharPainel(); DesenharPainelConfig(); }
-      else if(btn==PANEL_PREFIX+"D_btn_tab_fl"){ ObjectDelete(0,btn); }
+      else if(btn==PANEL_PREFIX+"D_btn_tab_fl"){ g_DiagTab=2; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainelDiag(); }
       else if(btn==PANEL_PREFIX+"D_btn_tab_fr"){ g_DiagTab=1; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainelDiag(); }
-      else if(btn==PANEL_PREFIX+"D_btn_tab_fb"){ g_DiagTab=2; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainelDiag(); }
+      
       ChartRedraw(0);
    }
 }
