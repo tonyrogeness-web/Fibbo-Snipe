@@ -1996,11 +1996,17 @@ void DesenharLinhasChart() {
    bool super_bloq_s = (InpFR_BlockAgainstSuperTrend && g_H4_ADX >= InpFR_SuperTrend_ADX && ask > g_MG_EMA200 && g_MG_EMA200 > 0);
    bool super_bloq_b = (InpFR_BlockAgainstSuperTrend && g_H4_ADX >= InpFR_SuperTrend_ADX && bid < g_MG_EMA200 && g_MG_EMA200 > 0);
 
-   // Linha só vira CONTÍNUA (SOLID) se TODOS os requisitos estiverem válidos e NÃO estiver em Modo ZEN
-   bool fr_top_hl = !is_zen && fr_all_ok && !super_bloq_s && fr_dir_sell && fr_sell_confl_ok && 
-                    (g_ReadyFR_Sell || (MathAbs(g_CachedFRTop-ask)/_Point <= zone_pts));
-   bool fr_bot_hl = !is_zen && fr_all_ok && !super_bloq_b && fr_dir_buy && fr_buy_confl_ok && 
-                    (g_ReadyFR_Buy  || (MathAbs(bid-g_CachedFRFundo)/_Point <= zone_pts));
+   double dist_top_pts = (g_CachedFRTop > 0) ? MathAbs(g_CachedFRTop - ask) / _Point : 99999;
+   double dist_bot_pts = (g_CachedFRFundo > 0) ? MathAbs(bid - g_CachedFRFundo) / _Point : 99999;
+   double trig_proximity_zone = (g_CachedATR > 0) ? (g_CachedATR / _Point) * 1.2 : 150.0;
+   
+   bool perto_topo_draw = (dist_top_pts < dist_bot_pts);
+
+   // Linha só vira CONTÍNUA (SOLID) se TODOS os requisitos do lado ativo estiverem válidos e NÃO estiver em Modo ZEN
+   bool fr_top_hl = !is_zen && fr_all_ok && perto_topo_draw && !super_bloq_s && fr_dir_sell && fr_sell_confl_ok && 
+                    (g_ReadyFR_Sell || (dist_top_pts <= trig_proximity_zone));
+   bool fr_bot_hl = !is_zen && fr_all_ok && !perto_topo_draw && !super_bloq_b && fr_dir_buy && fr_buy_confl_ok && 
+                    (g_ReadyFR_Buy  || (dist_bot_pts <= trig_proximity_zone));
    
    bool fr_show_top = false, fr_show_bot = false;
    if(draw_lines) {
@@ -2024,10 +2030,6 @@ void DesenharLinhasChart() {
       double fr_trig_offset = (g_CachedATR > 0) ? (g_CachedATR * 0.15) : (_Point * 20.0);
       double trig_sell_p = g_CachedFRTop - fr_trig_offset;
       double trig_buy_p  = g_CachedFRFundo + fr_trig_offset;
-      
-      double dist_top_pts = (g_CachedFRTop > 0) ? MathAbs(g_CachedFRTop - ask) / _Point : 99999;
-      double dist_bot_pts = (g_CachedFRFundo > 0) ? MathAbs(bid - g_CachedFRFundo) / _Point : 99999;
-      double trig_proximity_zone = (g_CachedATR > 0) ? (g_CachedATR / _Point) * 1.2 : 150.0;
 
       bool show_trig_sell = (fr_top_hl && dist_top_pts <= trig_proximity_zone && !is_zen && draw_lines && g_FastNPosSymbol == 0);
       bool show_trig_buy  = (fr_bot_hl && dist_bot_pts <= trig_proximity_zone && !is_zen && draw_lines && g_FastNPosSymbol == 0);
