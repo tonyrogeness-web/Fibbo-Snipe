@@ -586,7 +586,7 @@ input ENUM_TIMEFRAMES InpTF = PERIOD_H2; // [H2 CAMPEÃO CENÁRIO 3] TF de execu
 input int InpCandlesToLook = 14;
 input bool InpUseTrendFilter = true;
 input int InpShortEMA_Period = 9;
-input bool InpUseFluxo = false, InpFluxo_GatilhoPrecoce = true, InpFluxo_IgnoreWallStrong = true, InpUseVolumeFilter = true, InpFluxo_UseExhaustion = true; // [OTIMIZADO PROP] Fluxo desativado para máxima assertividade (FR)
+input bool InpUseFluxo = true, InpFluxo_GatilhoPrecoce = false, InpFluxo_IgnoreWallStrong = true, InpUseVolumeFilter = true, InpFluxo_UseExhaustion = true; // [OTIMIZADO PROP] Fluxo desativado para máxima assertividade (FR)
 
 input group "=== FALSO ROMPIMENTO (ALTA PRECISÃO) ==="
 input bool InpUseFR = true, InpFR_UseRSI = true;
@@ -2616,19 +2616,23 @@ void DesenharPainelDiag() {
    }
    cur+=8;DPRECT("sep_s",dpx,cur,dpw,1,CLR_LINE_SOFT,-1,202);cur+=6;
 
-   string s_name=(g_DiagTab==2)?"FIBO"+m_dir:"F.ROMP"+m_dir;
+   string s_name=(g_DiagTab==2)?"FLUXO"+m_dir:"F.ROMP"+m_dir;
    color c_name=CLR_TXT_PRIMARY;
    DPLBL("st_hdr",dlx,cur+2,"REQUISITOS - "+s_name+":",c_name,InpPanelFontSize,true);cur+=20;
    bool is_lat=IsMercadoLateral(), s_rdy=false; int tD=g_CachedTrendDir;
    if(g_DiagTab==2){
-      bool u_flx = IsFluxoAllowedForCurrentSymbol() && InpUseFluxo;
+      bool u_flx = InpUseFluxo;
+      bool is_rot_ok = IsFluxoAllowedForCurrentSymbol();
       bool c_canal = (g_CachedCanalHigh > 0 && g_CachedCanalLow > 0);
       bool c_vol = (InpUseVolumeFilter && g_CachedVolMed > 0);
       bool c_parede = !g_FluxoParedeAtiva;
+      bool t_ok = (g_CachedTrendDir != 0);
+      string t_txt = (g_CachedTrendDir == 1) ? "ALTA (COMPRA)" : ((g_CachedTrendDir == -1) ? "BAIXA (VENDA)" : "NEUTRO");
       
       DROW_DYN("Uso Estratégia", u_flx ? "sim" : "OFF", !u_flx);
-      DROW_DYN("Canal L1 (H2)", c_canal ? "MAPEADO" : "AGUARDANDO", !c_canal);
-      DROW_DYN("Tendência / EMA", (g_CachedTrendDir != 0) ? (g_CachedTrendDir == 1 ? "ALTA (COMPRA)" : "BAIXA (VENDA)") : "NEUTRO", (g_CachedTrendDir == 0));
+      DROW_DYN("Roteamento Ativo", is_rot_ok ? "PERMITIDO" : "BLOQUEADO (PAR RANGE)", !is_rot_ok);
+      DROW_DYN("Canal L1 (H2)", c_canal ? "MAPEADO (OK)" : "AGUARDANDO", !c_canal);
+      DROW_DYN("Tendência / EMA", t_txt, !t_ok);
       DROW_DYN("Volume Médio L1", c_vol ? "LIVRE (OK)" : "PADRÃO", false);
       DROW_DYN("Anti-Parede FR", c_parede ? "LIVRE" : "PAREDE ATIVA", !c_parede);
       DROW_DYN("Anti-Exaustão ATR", "ATIVO", false);
@@ -2649,7 +2653,7 @@ void DesenharPainelDiag() {
          not_val = (d_not ? "BLOQ " : "") + g_ProximaNoticiaName + " (" + IntegerToString(m_l) + "m)";
       }
       DROW_DYN("Filtro Notícia", not_val, d_not);
-      s_rdy = (!any_glb && u_flx && c_canal && g_ReadyFluxo);
+      s_rdy = (!any_glb && u_flx && is_rot_ok && c_canal && t_ok && confl_mg_ok && c_parede);
    } else {
       bool u_r=InpUseFR, c_c=g_CachedFrCdOk, c_l=(g_CachedFRTop>0&&g_CachedFRFundo>0);
        bool dir_s_ok,dir_b_ok; GetFR_DirecaoOk(g_CachedMedDir,g_CachedRSI,dir_s_ok,dir_b_ok);
