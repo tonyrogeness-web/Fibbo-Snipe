@@ -2031,8 +2031,11 @@ void DesenharLinhasChart() {
       int m_l1_gat = sec_l1_gat / 60, s_l1_gat = sec_l1_gat % 60;
       string s_gat_time = StringFormat("(Fecha em %02dm %02ds)", m_l1_gat, s_l1_gat);
 
-      DrawVisualLine("FR_Gat_V", trig_sell_p, C'0,230,118', C'0,255,128', "⚡", "⚡ GATILHO VENDA " + s_gat_time, show_trig_sell, false);
-      DrawVisualLine("FR_Gat_C", trig_buy_p,  C'0,230,118', C'0,255,128', "⚡", "⚡ GATILHO COMPRA " + s_gat_time, show_trig_buy,  false);
+      string lbl_gat_v = "⚡ GATILHO VENDA " + s_gat_time;
+      string lbl_gat_c = "⚡ GATILHO COMPRA " + s_gat_time;
+
+      DrawVisualLine("FR_Gat_V", trig_sell_p, C'0,230,118', C'0,255,128', lbl_gat_v, lbl_gat_v, show_trig_sell, true);
+      DrawVisualLine("FR_Gat_C", trig_buy_p,  C'0,230,118', C'0,255,128', lbl_gat_c, lbl_gat_c, show_trig_buy,  true);
    } else {
       DrawVisualLine("FR_Topo",  0, clrNONE, clrNONE, "", "", false, false);
       DrawVisualLine("FR_Fundo", 0, clrNONE, clrNONE, "", "", false, false);
