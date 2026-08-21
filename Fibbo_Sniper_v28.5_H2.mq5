@@ -4101,7 +4101,6 @@ void OnTick() {
              if(!g_MG_BuyAllowed) confl_b_ok = false;
              
              if(g_MG_ATR > 0) {
-                 // [BUG-C1 FIX] Variáveis declaradas dentro do bloco — escopo correto
                  double dist_mg = g_MG_ATR * 3.0;
                  bool perto_res = false, perto_sup = false;
                  if(g_MG_FR_H4_Res > 0 && MathAbs(pH - g_MG_FR_H4_Res) <= dist_mg) perto_res = true;
@@ -4114,6 +4113,16 @@ void OnTick() {
              }
          }
 
+
+
+          // [BLINDAGEM 1] Trava Anti-Super-Tendência L1 (Execução Real Day Trade + Direct)
+          if(InpFR_BlockAgainstSuperTrend && g_H4_ADX >= InpFR_SuperTrend_ADX) {
+              double e200_l1 = (g_MG_EMA200 > 0) ? g_MG_EMA200 : 0;
+              if(e200_l1 > 0) {
+                 if(bid > e200_l1) { confl_s_ok = false; m_sell = false; } // Super-Alta: Proibido vender topo
+                 if(ask < e200_l1) { confl_b_ok = false; m_buy  = false; } // Super-Baixa: Proibido comprar fundo
+              }
+          }
 
          // [R3] Cooldown por tempo: bloqueia re-entrada no mesmo nível FR por N minutos
          int _fr_cd=InpFR_CooldownMinutes*60;
