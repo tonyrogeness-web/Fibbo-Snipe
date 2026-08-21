@@ -2402,6 +2402,7 @@ void DesenharPainel() {
    bool glb_blocked=(d_gblk||d_blk||d_pau||d_sess||d_mpos||d_spr2||d_liq2||d_osc2||d_not2||d_cax2);
    bool u_r2=IsFRAllowedForCurrentSymbol(), c_c2=g_CachedFrCdOk, c_l2=(g_CachedFRTop>0&&g_CachedFRFundo>0);
    bool tem_flx_pos = TemPosicaoAbertaNoAtivoComPrefixo("Fluxo_");
+   bool tem_fr_pos = TemPosicaoAbertaNoAtivoComPrefixo("FR_");
    bool dir_s_ok2,dir_b_ok2; GetFR_DirecaoOk(g_CachedMedDir,g_CachedRSI,dir_s_ok2,dir_b_ok2);
    double ask_curr_main = SymbolInfoDouble(_Symbol, SYMBOL_ASK), bid_curr_main = SymbolInfoDouble(_Symbol, SYMBOL_BID);
    bool perto_topo_main = (g_CachedFRTop > 0 && MathAbs(g_CachedFRTop - ask_curr_main) < MathAbs(bid_curr_main - g_CachedFRFundo));
@@ -2438,99 +2439,80 @@ void DesenharPainel() {
       else s_fr_req = "Requisitos: ✖ Faltam Requisitos";
    }
 
-   bool show_fibo_card = IsFiboActiveForSymbol();
-   if(!show_fibo_card) {
-      ObjectDelete(0, PANEL_PREFIX + "fb_card"); ObjectDelete(0, PANEL_PREFIX + "fb_card_bg"); ObjectDelete(0, PANEL_PREFIX + "fb_card_acc");
-      ObjectDelete(0, PANEL_PREFIX + "fb_n1"); ObjectDelete(0, PANEL_PREFIX + "fb_st"); ObjectDelete(0, PANEL_PREFIX + "fb_req"); ObjectDelete(0, PANEL_PREFIX + "fb_wr");
-   }
+   bool is_fr_allowed = IsFRAllowedForCurrentSymbol();
+   bool is_fluxo_allowed = IsFluxoAllowedForCurrentSymbol();
+   
+   // Determina se mostramos 2 cards ou 1 card expandido
+   bool show_two_cards = (is_fr_allowed && is_fluxo_allowed) || (!is_fr_allowed && !is_fluxo_allowed);
+   bool show_only_fluxo = (!is_fr_allowed && is_fluxo_allowed);
+   bool show_only_fr = (is_fr_allowed && !is_fluxo_allowed);
+   
+   // Limpar objetos antigos se necessário
+   ObjectDelete(0, PANEL_PREFIX + "fb_card"); ObjectDelete(0, PANEL_PREFIX + "fb_card_bg"); ObjectDelete(0, PANEL_PREFIX + "fb_card_acc");
+   ObjectDelete(0, PANEL_PREFIX + "fb_n1"); ObjectDelete(0, PANEL_PREFIX + "fb_st"); ObjectDelete(0, PANEL_PREFIX + "fb_req"); ObjectDelete(0, PANEL_PREFIX + "fb_wr");
 
-   // --- VALIDAÇÃO DE LINHA CONTÍNUA E ARMADO REAL DO FR ---
-   bool fr_dir_sell_chk = true, fr_dir_buy_chk = true;
-   GetFR_DirecaoOk(g_CachedMedDir, g_CachedRSI, fr_dir_sell_chk, fr_dir_buy_chk);
-   bool fr_sell_confl_chk = (g_ModoConfluencia > 0) ? g_MG_SellAllowed : true;
-   bool fr_buy_confl_chk  = (g_ModoConfluencia > 0) ? g_MG_BuyAllowed : true;
-   if(!fr_sell_confl_chk) fr_dir_sell_chk = false;
-   if(!fr_buy_confl_chk)  fr_dir_buy_chk  = false;
-
-   bool fr_line_solid = (fr_dir_sell_chk && fr_sell_confl_chk && (g_ReadyFR_Sell || (MathAbs(g_CachedFRTop-ask_p)/_Point <= zone_p))) ||
-                        (fr_dir_buy_chk  && fr_buy_confl_chk  && (g_ReadyFR_Buy  || (MathAbs(bid_p-g_CachedFRFundo)/_Point <= zone_p)));
-   bool is_ready_fr = InpUseFR && fr_all_ok && (fr_dir_sell_chk || fr_dir_buy_chk) && (g_ReadyFR || (in_rd_fr && fr_line_solid));
-
-   int cw_fr = show_fibo_card ? ((pw - (pad * 2) - 4) / 2) : (pw - (pad * 2));
-   {
-      int ox=px+pad-2;
+   // --- CARD 1: FALSO ROMPIMENTO (FR) ---
+   if(!show_only_fluxo) {
+      int cw_fr = show_two_cards ? ((pw - (pad * 2) - 4) / 2) : (pw - (pad * 2));
+      int ox = px + pad - 2;
       
-      // Quando ARMADO E COM LINHA CONTÍNUA -> Vermelho (Img 3). Quando PONTILHADO/ESPERA/BLOQ -> 100% Cinza Neutro (Img 1)
+      bool fr_dir_sell_chk = true, fr_dir_buy_chk = true;
+      GetFR_DirecaoOk(g_CachedMedDir, g_CachedRSI, fr_dir_sell_chk, fr_dir_buy_chk);
+      bool fr_sell_confl_chk = (g_ModoConfluencia > 0) ? g_MG_SellAllowed : true;
+      bool fr_buy_confl_chk  = (g_ModoConfluencia > 0) ? g_MG_BuyAllowed : true;
+      if(!fr_sell_confl_chk) fr_dir_sell_chk = false;
+      if(!fr_buy_confl_chk)  fr_dir_buy_chk  = false;
+
+      bool fr_line_solid = (fr_dir_sell_chk && fr_sell_confl_chk && (g_ReadyFR_Sell || (MathAbs(g_CachedFRTop-ask_p)/_Point <= zone_p))) ||
+                           (fr_dir_buy_chk  && fr_buy_confl_chk  && (g_ReadyFR_Buy  || (MathAbs(bid_p-g_CachedFRFundo)/_Point <= zone_p)));
+      bool is_ready_fr = is_fr_allowed && InpUseFR && fr_all_ok && (fr_dir_sell_chk || fr_dir_buy_chk) && (g_ReadyFR || (in_rd_fr && fr_line_solid));
+
       color c_fr_ico = is_ready_fr ? C'245,80,80' : CLR_MUTED;
       color bg_fr    = is_ready_fr ? C'38,14,18'  : CLR_BG_CARD;
       color txt_fr   = is_ready_fr ? CLR_TXT_WHITE : CLR_TXT_LABEL;
       color c_fr_st  = is_ready_fr ? (g_ReadyFR ? C'0,255,136' : C'255,193,7') : CLR_MUTED;
-      string s_fr2   = !InpUseFR ? "OFF" : (!u_r2 ? "OFF (Roteamento)" : (tem_flx_pos ? "BLOQ (Fluxo)" : (is_ready_fr ? (g_ReadyFR ? "⚡ DISPARO IMEDIATO!" : ("ARMADO! (Fecha em " + s_next + ")")) : "Prox.Vela")));
+      string s_fr2   = !InpUseFR ? "OFF" : (!is_fr_allowed ? "OFF (Roteamento)" : (tem_flx_pos ? "BLOQ (Fluxo)" : (is_ready_fr ? (g_ReadyFR ? "⚡ DISPARO IMEDIATO!" : ("ARMADO! (Fecha em " + s_next + ")")) : "Prox.Vela")));
       
       string tf_fr_card = StringSubstr(EnumToString(g_TF_L1), 7);
-      PModuleCardH("fr_card",ox,cur,cw_fr,ch,c_fr_ico,bg_fr);
-      PLabel("fr_n1",ox+ico_x,cur+nome_y,show_fibo_card?("F.ROMP ["+tf_fr_card+"]"+m_dir):("FALSO ROMPIMENTO ["+tf_fr_card+"]"+m_dir),txt_fr,InpPanelFontSize,true);
-      PLabel("fr_st",ox+ico_x,cur+st_y,s_fr2,c_fr_st,InpPanelFontSize-2,true);
-      PLabel("fr_req",ox+ico_x,cur+req_y,show_fibo_card?(fr_all_ok?"Req: ✔ OK":"Req: ✖ BLOQ"):s_fr_req,is_ready_fr?c_fr_req_clr:CLR_TXT_DIM,InpPanelFontSize-2,true);
-      string sr_fr=StringFormat(show_fibo_card?"%dW/%dT":"Assertividade: %dW / %dT",g_FrWins,g_FrTotal);
-      if(g_FrTotal>0)sr_fr+=" ("+IntegerToString((int)((g_FrWins*100.0)/g_FrTotal))+"%)";
-      PLabel("fr_wr",ox+ico_x,cur+wr_y,sr_fr,(is_ready_fr && g_FrWins>=g_FrTotal/2.0&&g_FrTotal>0)?C'0,230,118':CLR_TXT_LABEL,InpPanelFontSize-2);
+      PModuleCardH("fr_card", ox, cur, cw_fr, ch, c_fr_ico, bg_fr);
+      PLabel("fr_n1", ox+ico_x, cur+nome_y, show_two_cards ? ("F.ROMP ["+tf_fr_card+"]"+m_dir) : ("FALSO ROMPIMENTO ["+tf_fr_card+"]"+m_dir), txt_fr, InpPanelFontSize, true);
+      PLabel("fr_st", ox+ico_x, cur+st_y, s_fr2, c_fr_st, InpPanelFontSize-2, true);
+      PLabel("fr_req", ox+ico_x, cur+req_y, show_two_cards ? (fr_all_ok ? "Req: ✔ OK" : "Req: ✖ BLOQ") : s_fr_req, is_ready_fr ? c_fr_req_clr : CLR_TXT_DIM, InpPanelFontSize-2, true);
+      string sr_fr = StringFormat(show_two_cards ? "%dW/%dT" : "Assertividade: %dW / %dT", g_FrWins, g_FrTotal);
+      if(g_FrTotal > 0) sr_fr += " (" + IntegerToString((int)((g_FrWins * 100.0) / g_FrTotal)) + "%)";
+      PLabel("fr_wr", ox+ico_x, cur+wr_y, sr_fr, (is_ready_fr && g_FrWins >= g_FrTotal/2.0 && g_FrTotal > 0) ? C'0,230,118' : CLR_TXT_LABEL, InpPanelFontSize-2);
+   } else {
+      ObjectDelete(0, PANEL_PREFIX + "fr_card"); ObjectDelete(0, PANEL_PREFIX + "fr_card_bg"); ObjectDelete(0, PANEL_PREFIX + "fr_card_acc");
+      ObjectDelete(0, PANEL_PREFIX + "fr_n1"); ObjectDelete(0, PANEL_PREFIX + "fr_st"); ObjectDelete(0, PANEL_PREFIX + "fr_req"); ObjectDelete(0, PANEL_PREFIX + "fr_wr");
    }
 
-   if(show_fibo_card) {
-      int cw2 = (pw - (pad * 2) - 4) / 2;
-      int ox=px+pad-2+cw2+4;
+   // --- CARD 2: FLUXO INSTITUCIONAL ---
+   if(!show_only_fr) {
+      int cw_flx = show_two_cards ? ((pw - (pad * 2) - 4) / 2) : (pw - (pad * 2));
+      int ox = show_two_cards ? (px + pad - 2 + cw_flx + 4) : (px + pad - 2);
       
-      // --- VALIDAÇÃO DE LINHA CONTÍNUA E ARMADO REAL DA FIBO ---
-      double nSell_chk = 0, nBuy_chk = 0;
-      if(g_CachedFiboH > 0 && g_CachedFiboLow > 0) {
-         double range_chk = g_CachedFiboH - g_CachedFiboLow;
-         if(range_chk >= (g_CachedFiboATR * InpFibMinRange_ATR_Multi)) {
-            nSell_chk = g_CachedFiboH - range_chk * (InpFibLevel1 / 100.0);
-            nBuy_chk  = g_CachedFiboLow + range_chk * (InpFibLevel1 / 100.0);
-         }
-      }
-      bool fb_dir_sell_chk = (mkt_lateral || tDir == -1);
-      bool fb_dir_buy_chk  = (mkt_lateral || tDir == 1);
-      if(g_ModoConfluencia > 0) {
-         if(!g_MG_SellAllowed) fb_dir_sell_chk = false;
-         if(!g_MG_BuyAllowed)  fb_dir_buy_chk  = false;
-      }
-      bool fb_line_solid = (fb_dir_sell_chk && (g_ReadyFibo || (MathAbs(nSell_chk-ask_p)/_Point <= zone_p))) ||
-                           (fb_dir_buy_chk  && (g_ReadyFibo || (MathAbs(bid_p-nBuy_chk)/_Point <= zone_p)));
+      bool flx_all_ok = (!glb_blocked && is_fluxo_allowed && InpUseFluxo && !tem_fr_pos && g_CachedFluxoCdOk && g_CachedCanalHigh > 0 && g_CachedCanalLow > 0);
+      bool is_ready_flx = flx_all_ok && g_ReadyFluxo;
       
-      // [SINCRONIA TOTAL] Card Fibo só fica ARMADO se 100% dos requisitos (ADX, Tendência, Confluência) estiverem válidos
-      bool fb_adx_chk   = p_UsePassaFiltroADXFibo ? (g_H4_ADX >= cfg_ADX_MinLevel) : true;
-      int  t_h4_card    = ComputeTrendDir(hShortEMA_H4, hEMA_H4);
-      bool fb_trend_chk = (!p_UseTrendDirFibo || t_h4_card == 1 || t_h4_card == -1);
-      bool fb_confl_chk = (g_ModoConfluencia > 0) ? (t_h4_card == 1 ? g_MG_BuyAllowed : (t_h4_card == -1 ? g_MG_SellAllowed : (g_MG_BuyAllowed || g_MG_SellAllowed))) : true;
+      color c_flx_ico = is_ready_flx ? C'0,180,255' : CLR_MUTED;
+      color bg_flx    = is_ready_flx ? C'10,25,45'   : CLR_BG_CARD;
+      color txt_flx   = is_ready_flx ? CLR_TXT_WHITE : CLR_TXT_LABEL;
+      color c_flx_st  = is_ready_flx ? C'0,255,136' : (flx_all_ok ? C'0,180,255' : CLR_MUTED);
+      string s_flx    = !InpUseFluxo ? "OFF" : (!is_fluxo_allowed ? "OFF (Roteamento)" : (tem_fr_pos ? "BLOQ (FR)" : (is_ready_flx ? "⚡ DISPARO FLUXO!" : (flx_all_ok ? ("ARMADO! (" + s_next + ")") : "Aguardando"))));
       
-      datetime cb_h4_card = iTime(_Symbol, PERIOD_H4, 0);
-      int cd_sec_card = InpFR_CooldownMinutes * 60;
-      bool fb_cd_time_b = (cd_sec_card <= 0 || (TimeCurrent() - l_fibo_buy_ts >= cd_sec_card));
-      bool fb_cd_time_s = (cd_sec_card <= 0 || (TimeCurrent() - l_fibo_sell_ts >= cd_sec_card));
-      bool fb_bar_ok    = (tDir == 1) ? (cb_h4_card != f_h4_buy && fb_cd_time_b) : ((tDir == -1) ? (cb_h4_card != f_h4_sell && fb_cd_time_s) : ((cb_h4_card != f_h4_buy && fb_cd_time_b) || (cb_h4_card != f_h4_sell && fb_cd_time_s)));
-
-      bool fb_all_ok = (!glb_blocked && IsFiboActiveForSymbol() && fb_cd && fb_bar_ok && 
-                        (g_CachedFiboH > 0 && g_CachedFiboLow > 0 && g_CachedFiboATR > 0) &&
-                        fb_adx_chk && fb_trend_chk && fb_confl_chk);
-      bool is_ready_fb = fb_all_ok && (g_ReadyFibo || (in_rd_fb && fb_line_solid));
-      
-      // Quando ARMADO E COM LINHA CONTÍNUA -> Amarelo (Img 2). Quando PONTILHADO/ESPERA/BLOQ -> 100% Cinza Neutro (Img 1)
-      color c_fb_ico = is_ready_fb ? CLR_AMBER : CLR_MUTED;
-      color bg_fb    = is_ready_fb ? CLR_AMBER_DIM : CLR_BG_CARD;
-      color txt_fb   = is_ready_fb ? CLR_TXT_WHITE : CLR_TXT_LABEL;
-      color c_fb_st  = is_ready_fb ? (g_ReadyFibo ? C'0,255,136' : CLR_AMBER) : CLR_MUTED;
-      string s_fb    = !IsFiboActiveForSymbol() ? "OFF" : (is_ready_fb ? (g_ReadyFibo ? "GATILHO!" : "ARMADO!") : "Prox.Vela");
-      
-      PModuleCardH("fb_card",ox,cur,cw2,ch,c_fb_ico,bg_fb);
-      PLabel("fb_n1",ox+ico_x,cur+nome_y,"FIBO [H4]"+m_dir,txt_fb,InpPanelFontSize,true);
-      PLabel("fb_st",ox+ico_x,cur+st_y,s_fb,c_fb_st,InpPanelFontSize-2,true);
-      string sr_fb=StringFormat("%dW/%dT",g_FiboWins,g_FiboTotal);
-      if(g_FiboTotal>0)sr_fb+=" ("+IntegerToString((int)((g_FiboWins*100.0)/g_FiboTotal))+"%)";
-      PLabel("fb_wr",ox+ico_x,cur+wr_y,sr_fb,(is_ready_fb && g_FiboWins>=g_FiboTotal/2.0&&g_FiboTotal>0)?CLR_TEAL:CLR_TXT_LABEL,InpPanelFontSize-2);
+      string tf_flx_card = StringSubstr(EnumToString(g_TF_L1), 7);
+      PModuleCardH("flx_card", ox, cur, cw_flx, ch, c_flx_ico, bg_flx);
+      PLabel("flx_n1", ox+ico_x, cur+nome_y, show_two_cards ? ("FLUXO ["+tf_flx_card+"]"+m_dir) : ("FLUXO INSTITUCIONAL ["+tf_flx_card+"]"+m_dir), txt_flx, InpPanelFontSize, true);
+      PLabel("flx_st", ox+ico_x, cur+st_y, s_flx, c_flx_st, InpPanelFontSize-2, true);
+      PLabel("flx_req", ox+ico_x, cur+req_y, flx_all_ok ? "Req: ✔ OK (PRONTO)" : (!is_fluxo_allowed ? "Req: ✖ Bloq Roteamento" : "Req: ✖ Aguardando"), is_ready_flx ? C'0,230,118' : CLR_TXT_DIM, InpPanelFontSize-2, true);
+      string sr_flx = StringFormat(show_two_cards ? "%dW/%dT" : "Assertividade: %dW / %dT", g_FluxoWins, g_FluxoTotal);
+      if(g_FluxoTotal > 0) sr_flx += " (" + IntegerToString((int)((g_FluxoWins * 100.0) / g_FluxoTotal)) + "%)";
+      PLabel("flx_wr", ox+ico_x, cur+wr_y, sr_flx, (is_ready_flx && g_FluxoWins >= g_FluxoTotal/2.0 && g_FluxoTotal > 0) ? C'0,230,118' : CLR_TXT_LABEL, InpPanelFontSize-2);
+   } else {
+      ObjectDelete(0, PANEL_PREFIX + "flx_card"); ObjectDelete(0, PANEL_PREFIX + "flx_card_bg"); ObjectDelete(0, PANEL_PREFIX + "flx_card_acc");
+      ObjectDelete(0, PANEL_PREFIX + "flx_n1"); ObjectDelete(0, PANEL_PREFIX + "flx_st"); ObjectDelete(0, PANEL_PREFIX + "flx_req"); ObjectDelete(0, PANEL_PREFIX + "flx_wr");
    }
-   cur+=ch+22;
+   cur += ch + 22;
 
    if(g_FastNPosSymbol > 0) {
       double c_posOpen=0, c_posSL=0, c_posTP=0, c_posProfit=0; long c_posType=0; double c_lot=0; string c_comm=""; ulong c_ticket=0;
@@ -2687,7 +2669,7 @@ void DesenharPainel() {
    ObjectDelete(0, PANEL_PREFIX + "btn_leg_fl");
    int tw=(pw-(pad*2)-10)/3;
    PButton("btn_leg_fr",px+pad-2,cur,tw,15,g_ViewFR?"● F.R.":"○ F.R.",CLR_BG_CARD,g_ViewFR?CLR_RED:CLR_MUTED);
-   PButton("btn_leg_fb",px+pad-2+tw+3,cur,tw,15,g_ViewFibo?"● FIBO":"○ FIBO",CLR_BG_CARD,g_ViewFibo?CLR_AMBER:CLR_MUTED);
+   PButton("btn_leg_fl",px+pad-2+tw+3,cur,tw,15,g_ViewFluxo?"● FLUXO":"○ FLUXO",CLR_BG_CARD,g_ViewFluxo?C'0,180,255':CLR_MUTED);
    PButton("btn_leg_zn",px+pad-2+tw*2+6,cur,tw+4,15,g_ViewZonas?"👁 ZEN":"👁 ZEN",g_ViewZonas?CLR_PURPLE_DIM:CLR_BG_CARD,g_ViewZonas?CLR_PURPLE:CLR_TXT_DIM); cur+=18;
    PLabel("lbl_linhas",px+pad-2,cur+2,"LINHAS:",CLR_TXT_LABEL,InpPanelFontSize-1,true);
    int btn_w3=(pw-(pad*2)-48)/3;
@@ -2735,10 +2717,10 @@ void DesenharPainelDiag() {
    DPRECT("border",dpx-1,dpy-1,dpw+2,s_diag_h+2,CLR_LINE_HARD,(int)c_border,197);DPRECT("bg",dpx,dpy,dpw,s_diag_h,CLR_BG_BASE,-1,198);DPRECT("hdr_bg",dpx,dpy,dpw,2,CLR_PURPLE,-1,200);DPRECT("hdr_main",dpx,dpy+2,dpw,18,CLR_BG_HEADER,-1,199);DPLBL("hdr_ico",dlx,cur+4,"⚡",CLR_PURPLE,InpPanelFontSize,true);DPLBL("hdr_ttl",dlx+14,cur+4,"DIAGNÓSTICO MTF",CLR_TXT_WHITE,InpPanelFontSize,true);
    {string _bn=DP+"btn_close";if(ObjectFind(0,_bn)<0)ObjectCreate(0,_bn,OBJ_BUTTON,0,0,0);ObjectSetInteger(0,_bn,OBJPROP_XDISTANCE,drx-8);ObjectSetInteger(0,_bn,OBJPROP_YDISTANCE,cur+3);ObjectSetInteger(0,_bn,OBJPROP_XSIZE,16);ObjectSetInteger(0,_bn,OBJPROP_YSIZE,14);ObjectSetString(0,_bn,OBJPROP_TEXT,"✕");ObjectSetInteger(0,_bn,OBJPROP_BGCOLOR,CLR_BG_HEADER);ObjectSetInteger(0,_bn,OBJPROP_COLOR,CLR_TXT_LABEL);ObjectSetInteger(0,_bn,OBJPROP_BORDER_COLOR,CLR_LINE_HARD);ObjectSetString(0,_bn,OBJPROP_FONT,"Arial Bold");ObjectSetInteger(0,_bn,OBJPROP_FONTSIZE,8);ObjectSetInteger(0,_bn,OBJPROP_CORNER,CORNER_LEFT_UPPER);ObjectSetInteger(0,_bn,OBJPROP_SELECTABLE,false);ObjectSetInteger(0,_bn,OBJPROP_HIDDEN,true);ObjectSetInteger(0,_bn,OBJPROP_STATE,false);ObjectSetInteger(0,_bn,OBJPROP_ZORDER,310);}
    ObjectDelete(0, DP+"btn_tab_fl");
-   if(g_DiagTab == 0) g_DiagTab = 1;
+   if(g_DiagTab == 0) { g_DiagTab = IsFluxoAllowedForCurrentSymbol() && !IsFRAllowedForCurrentSymbol() ? 2 : 1; }
    DPRECT("tab_bg",dpx,cur,dpw,24,CLR_BG_SECTION,-1,199);int tw=(dpw-16)/2;
    {string _bn=DP+"btn_tab_fr";if(ObjectFind(0,_bn)<0)ObjectCreate(0,_bn,OBJ_BUTTON,0,0,0);ObjectSetInteger(0,_bn,OBJPROP_XDISTANCE,dlx);ObjectSetInteger(0,_bn,OBJPROP_YDISTANCE,cur+2);ObjectSetInteger(0,_bn,OBJPROP_XSIZE,tw);ObjectSetInteger(0,_bn,OBJPROP_YSIZE,20);ObjectSetString(0,_bn,OBJPROP_TEXT,"F.ROMP"+m_dir);ObjectSetInteger(0,_bn,OBJPROP_BGCOLOR,g_DiagTab==1?CLR_RED:CLR_BG_CARD);ObjectSetInteger(0,_bn,OBJPROP_COLOR,g_DiagTab==1?CLR_TXT_WHITE:CLR_TXT_LABEL);ObjectSetInteger(0,_bn,OBJPROP_BORDER_COLOR,CLR_LINE_HARD);ObjectSetString(0,_bn,OBJPROP_FONT,"Arial Bold");ObjectSetInteger(0,_bn,OBJPROP_FONTSIZE,8);ObjectSetInteger(0,_bn,OBJPROP_CORNER,CORNER_LEFT_UPPER);ObjectSetInteger(0,_bn,OBJPROP_SELECTABLE,false);ObjectSetInteger(0,_bn,OBJPROP_HIDDEN,true);ObjectSetInteger(0,_bn,OBJPROP_STATE,false);ObjectSetInteger(0,_bn,OBJPROP_ZORDER,310);}
-   {string _bn=DP+"btn_tab_fb";if(ObjectFind(0,_bn)<0)ObjectCreate(0,_bn,OBJ_BUTTON,0,0,0);ObjectSetInteger(0,_bn,OBJPROP_XDISTANCE,dlx+tw+2);ObjectSetInteger(0,_bn,OBJPROP_YDISTANCE,cur+2);ObjectSetInteger(0,_bn,OBJPROP_XSIZE,tw);ObjectSetInteger(0,_bn,OBJPROP_YSIZE,20);ObjectSetString(0,_bn,OBJPROP_TEXT,"FIBO"+m_dir);ObjectSetInteger(0,_bn,OBJPROP_BGCOLOR,g_DiagTab==2?CLR_AMBER:CLR_BG_CARD);ObjectSetInteger(0,_bn,OBJPROP_COLOR,g_DiagTab==2?CLR_TXT_WHITE:CLR_TXT_LABEL);ObjectSetInteger(0,_bn,OBJPROP_BORDER_COLOR,CLR_LINE_HARD);ObjectSetString(0,_bn,OBJPROP_FONT,"Arial Bold");ObjectSetInteger(0,_bn,OBJPROP_FONTSIZE,8);ObjectSetInteger(0,_bn,OBJPROP_CORNER,CORNER_LEFT_UPPER);ObjectSetInteger(0,_bn,OBJPROP_SELECTABLE,false);ObjectSetInteger(0,_bn,OBJPROP_HIDDEN,true);ObjectSetInteger(0,_bn,OBJPROP_STATE,false);ObjectSetInteger(0,_bn,OBJPROP_ZORDER,310);}
+   {string _bn=DP+"btn_tab_fl";if(ObjectFind(0,_bn)<0)ObjectCreate(0,_bn,OBJ_BUTTON,0,0,0);ObjectSetInteger(0,_bn,OBJPROP_XDISTANCE,dlx+tw+2);ObjectSetInteger(0,_bn,OBJPROP_YDISTANCE,cur+2);ObjectSetInteger(0,_bn,OBJPROP_XSIZE,tw);ObjectSetInteger(0,_bn,OBJPROP_YSIZE,20);ObjectSetString(0,_bn,OBJPROP_TEXT,"FLUXO"+m_dir);ObjectSetInteger(0,_bn,OBJPROP_BGCOLOR,g_DiagTab==2?C'0,180,255':CLR_BG_CARD);ObjectSetInteger(0,_bn,OBJPROP_COLOR,g_DiagTab==2?CLR_TXT_WHITE:CLR_TXT_LABEL);ObjectSetInteger(0,_bn,OBJPROP_BORDER_COLOR,CLR_LINE_HARD);ObjectSetString(0,_bn,OBJPROP_FONT,"Arial Bold");ObjectSetInteger(0,_bn,OBJPROP_FONTSIZE,8);ObjectSetInteger(0,_bn,OBJPROP_CORNER,CORNER_LEFT_UPPER);ObjectSetInteger(0,_bn,OBJPROP_SELECTABLE,false);ObjectSetInteger(0,_bn,OBJPROP_HIDDEN,true);ObjectSetInteger(0,_bn,OBJPROP_STATE,false);ObjectSetInteger(0,_bn,OBJPROP_ZORDER,310);}
    cur+=24;DPRECT("sep_t",dpx,cur,dpw,1,CLR_LINE_SOFT,-1,202);cur+=4;int ridx=0;
    #define DROW_DYN(lbl_,val_,blk_) {string _id="r_"+IntegerToString(ridx);color _ca=blk_?CLR_RED:CLR_TEAL;string _pfx=blk_?"✗  ":"✓  ";DPRECT(_id+"_bg",dpx,cur,dpw,18,blk_?CLR_RED_DIM:CLR_BG_SECTION,blk_?CLR_RED:-1,200);DPLBL(_id+"_l",dlx,cur+3,_pfx+lbl_,_ca,InpPanelFontSize-1,blk_);DPLBLR(_id+"_v",drx,cur+3,val_,_ca,InpPanelFontSize-1,false);cur+=20;ridx++;}
    DPLBL("gl_hdr",dlx,cur+4,"⚠ FILTROS GLOBAIS:",CLR_TXT_LABEL,InpPanelFontSize,true);cur+=20;
@@ -2757,34 +2739,35 @@ void DesenharPainelDiag() {
    DPLBL("st_hdr",dlx,cur+2,"REQUISITOS - "+s_name+":",c_name,InpPanelFontSize,true);cur+=20;
    bool is_lat=IsMercadoLateral(), s_rdy=false; int tD=g_CachedTrendDir;
    if(g_DiagTab==2){
-      bool u_b=IsFiboActiveForSymbol(), c_c=g_CachedFiboCdOk; bool c_l=(g_CachedFiboH>0&&g_CachedFiboLow>0&&g_CachedFiboATR>0);
-      bool c_a=p_UsePassaFiltroADXFibo?(g_H4_ADX>=cfg_ADX_MinLevel):true;
-      int t_h4=ComputeTrendDir(hShortEMA_H4,hEMA_H4); bool c_t=(!p_UseTrendDirFibo || t_h4==1 || t_h4==-1);
-      datetime cb_h4_diag = iTime(_Symbol, PERIOD_H4, 0);
-      int cd_sec_diag = InpFR_CooldownMinutes * 60;
-      bool c_cd_time = (t_h4 == 1) ? (cd_sec_diag <= 0 || (TimeCurrent() - l_fibo_buy_ts >= cd_sec_diag)) : ((t_h4 == -1) ? (cd_sec_diag <= 0 || (TimeCurrent() - l_fibo_sell_ts >= cd_sec_diag)) : true);
-      bool c_bar_ok  = (t_h4 == 1) ? (cb_h4_diag != f_h4_buy && c_cd_time) : ((t_h4 == -1) ? (cb_h4_diag != f_h4_sell && c_cd_time) : (cb_h4_diag != f_h4_buy && cb_h4_diag != f_h4_sell && c_cd_time));
-
-      DROW_DYN("Uso Estratégia",u_b?"sim":"OFF",!u_b)
-      DROW_DYN("Vela H4 Atual",c_bar_ok?"LIVRE":"JÁ OPERADA",!c_bar_ok)
-      DROW_DYN("Cálculo Níveis H4",c_l?"sim":"NÃO",!c_l)
-      DROW_DYN("Tendência Macro H4",c_t?"alinhado":"NEUTRO",!c_t)
-      DROW_DYN("Força H4 (ADX="+DoubleToString(g_H4_ADX,1)+")",c_a?"ok":"FRACO",!c_a)
-      bool confl_mg_ok = true; string confl_val="OFF";
-      if(g_ModoConfluencia>0){
-         if(t_h4 == 1) { confl_mg_ok = g_MG_BuyAllowed; confl_val = g_MG_BuyAllowed ? "COMPRA (OK)" : (g_MG_SellAllowed ? "BLOQ (SÓ VENDA)" : "BLOQ (EMA)"); }
-         else if(t_h4 == -1) { confl_mg_ok = g_MG_SellAllowed; confl_val = g_MG_SellAllowed ? "VENDA (OK)" : (g_MG_BuyAllowed ? "BLOQ (SÓ COMPRA)" : "BLOQ (EMA)"); }
-         else {
-            if(g_MG_BuyAllowed&&!g_MG_SellAllowed) confl_val="SÓ COMPRA";
-            else if(!g_MG_BuyAllowed&&g_MG_SellAllowed) confl_val="SÓ VENDA";
-            else if(g_MG_BuyAllowed&&g_MG_SellAllowed) confl_val="LIVRE";
-            else confl_val="BLOQUEADO";
-            confl_mg_ok = (g_MG_BuyAllowed || g_MG_SellAllowed);
-         }
+      bool u_flx = IsFluxoAllowedForCurrentSymbol() && InpUseFluxo;
+      bool c_canal = (g_CachedCanalHigh > 0 && g_CachedCanalLow > 0);
+      bool c_vol = (InpUseVolumeFilter && g_CachedVolMed > 0);
+      bool c_parede = !g_FluxoParedeAtiva;
+      
+      DROW_DYN("Uso Estratégia", u_flx ? "sim" : "OFF", !u_flx);
+      DROW_DYN("Canal L1 (H2)", c_canal ? "MAPEADO" : "AGUARDANDO", !c_canal);
+      DROW_DYN("Tendência / EMA", (g_CachedTrendDir != 0) ? (g_CachedTrendDir == 1 ? "ALTA (COMPRA)" : "BAIXA (VENDA)") : "NEUTRO", (g_CachedTrendDir == 0));
+      DROW_DYN("Volume Médio L1", c_vol ? "LIVRE (OK)" : "PADRÃO", false);
+      DROW_DYN("Anti-Parede FR", c_parede ? "LIVRE" : "PAREDE ATIVA", !c_parede);
+      DROW_DYN("Anti-Exaustão ATR", "ATIVO", false);
+      
+      bool confl_mg_ok = true; string confl_val = "OFF";
+      if(g_ModoConfluencia > 0) {
+         if(g_MG_BuyAllowed && !g_MG_SellAllowed) confl_val = "SÓ COMPRA";
+         else if(!g_MG_BuyAllowed && g_MG_SellAllowed) confl_val = "SÓ VENDA";
+         else if(g_MG_BuyAllowed && g_MG_SellAllowed) confl_val = "LIVRE";
+         else confl_val = "BLOQUEADO";
+         confl_mg_ok = (g_MG_BuyAllowed || g_MG_SellAllowed);
       }
-      DROW_DYN("Filtro MktGlance",confl_val,!confl_mg_ok);
-      string not_val=d_not?"BLOQUEADO":"LIVRE"; if(g_ProximaNoticiaName!=""&&g_ProximaNoticiaTime>TimeCurrent()){int m_l=(int)((g_ProximaNoticiaTime-TimeCurrent())/60); not_val=(d_not?"BLOQ ":"")+g_ProximaNoticiaName+" ("+IntegerToString(m_l)+"m)";} DROW_DYN("Filtro Notícia",not_val,d_not)
-      s_rdy=(!any_glb&&u_b&&c_c&&c_l&&c_a&&c_t&&confl_mg_ok&&c_bar_ok);
+      DROW_DYN("Filtro MktGlance", confl_val, !confl_mg_ok);
+      
+      string not_val = d_not ? "BLOQUEADO" : "LIVRE";
+      if(g_ProximaNoticiaName != "" && g_ProximaNoticiaTime > TimeCurrent()) {
+         int m_l = (int)((g_ProximaNoticiaTime - TimeCurrent()) / 60);
+         not_val = (d_not ? "BLOQ " : "") + g_ProximaNoticiaName + " (" + IntegerToString(m_l) + "m)";
+      }
+      DROW_DYN("Filtro Notícia", not_val, d_not);
+      s_rdy = (!any_glb && u_flx && c_canal && g_ReadyFluxo);
    } else {
       bool u_r=InpUseFR, c_c=g_CachedFrCdOk, c_l=(g_CachedFRTop>0&&g_CachedFRFundo>0);
        bool dir_s_ok,dir_b_ok; GetFR_DirecaoOk(g_CachedMedDir,g_CachedRSI,dir_s_ok,dir_b_ok);
@@ -3000,7 +2983,7 @@ void DesenharPainelConfig() {
        else if(btn==PANEL_PREFIX+"btn_zerar"){ ObjectSetInteger(0,btn,OBJPROP_STATE,false); if(MessageBox("Zerar TODAS as posições do robô?","Confirmação",MB_YESNO|MB_ICONWARNING)==IDYES){FecharTodasPosicoesDoRobo();AddLog("PANICO: zeradas!");} g_PanelHash=""; DesenharPainel(); }
        else if(btn==PANEL_PREFIX+"btn_leg_fl"){ g_ViewFluxo=!g_ViewFluxo; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharLinhasChart(); }
        else if(btn==PANEL_PREFIX+"btn_leg_fr"){ g_ViewFR=!g_ViewFR;    ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharLinhasChart(); }
-       else if(btn==PANEL_PREFIX+"btn_leg_fb"){ g_ViewFibo=!g_ViewFibo; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharLinhasChart(); }
+       else if(btn==PANEL_PREFIX+"btn_leg_fl"){ g_ViewFluxo=!g_ViewFluxo; ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; DesenharPainel(); DesenharLinhasChart(); }
        else if(btn==PANEL_PREFIX+"btn_leg_zn"){ g_ViewZonas=!g_ViewZonas; g_ModoAnalise=g_ViewZonas; if(!g_ModoAnalise) LimparTudoAnalise(); ObjectSetInteger(0,btn,OBJPROP_STATE,false); g_PanelHash=""; LimparGrafico(); DesenharPainel(); DesenharLinhasChart(); }
        else if(btn==PANEL_PREFIX+"btn_l0")   { g_LinhasModo=0; ObjectSetInteger(0,btn,OBJPROP_STATE,false); LimparGrafico(); DesenharLinhasChart(); g_PanelHash=""; DesenharPainel(); }
        else if(btn==PANEL_PREFIX+"btn_l1")   { g_LinhasModo=1; ObjectSetInteger(0,btn,OBJPROP_STATE,false); LimparGrafico(); DesenharLinhasChart(); g_PanelHash=""; DesenharPainel(); }
