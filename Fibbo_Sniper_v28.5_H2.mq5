@@ -1993,10 +1993,13 @@ void DesenharLinhasChart() {
    bool fr_sell_confl_ok = (g_ModoConfluencia > 0) ? g_MG_SellAllowed : true;
    bool fr_buy_confl_ok  = (g_ModoConfluencia > 0) ? g_MG_BuyAllowed : true;
 
+   bool super_bloq_s = (InpFR_BlockAgainstSuperTrend && g_H4_ADX >= InpFR_SuperTrend_ADX && ask > g_MG_EMA200 && g_MG_EMA200 > 0);
+   bool super_bloq_b = (InpFR_BlockAgainstSuperTrend && g_H4_ADX >= InpFR_SuperTrend_ADX && bid < g_MG_EMA200 && g_MG_EMA200 > 0);
+
    // Linha só vira CONTÍNUA (SOLID) se TODOS os requisitos estiverem válidos e NÃO estiver em Modo ZEN
-   bool fr_top_hl = !is_zen && fr_all_ok && fr_dir_sell && fr_sell_confl_ok && 
+   bool fr_top_hl = !is_zen && fr_all_ok && !super_bloq_s && fr_dir_sell && fr_sell_confl_ok && 
                     (g_ReadyFR_Sell || (MathAbs(g_CachedFRTop-ask)/_Point <= zone_pts));
-   bool fr_bot_hl = !is_zen && fr_all_ok && fr_dir_buy && fr_buy_confl_ok && 
+   bool fr_bot_hl = !is_zen && fr_all_ok && !super_bloq_b && fr_dir_buy && fr_buy_confl_ok && 
                     (g_ReadyFR_Buy  || (MathAbs(bid-g_CachedFRFundo)/_Point <= zone_pts));
    
    bool fr_show_top = false, fr_show_bot = false;
@@ -2395,7 +2398,9 @@ void DesenharPainel() {
    bool confl_mg_main_ok = (g_ModoConfluencia > 0) ? (perto_topo_main ? g_MG_SellAllowed : g_MG_BuyAllowed) : true;
    bool dir_lado_main_ok = perto_topo_main ? dir_s_ok2 : dir_b_ok2;
 
-   bool fr_all_ok=(!glb_blocked && u_r2 && c_c2 && c_l2 && dir_lado_main_ok && confl_mg_main_ok);
+   bool super_bloq_main = (InpFR_BlockAgainstSuperTrend && g_H4_ADX >= InpFR_SuperTrend_ADX && ((perto_topo_main && ask_curr_main > g_MG_EMA200 && g_MG_EMA200 > 0) || (!perto_topo_main && bid_curr_main < g_MG_EMA200 && g_MG_EMA200 > 0)));
+
+   bool fr_all_ok=(!glb_blocked && !super_bloq_main && u_r2 && c_c2 && c_l2 && dir_lado_main_ok && confl_mg_main_ok);
 
    string s_fr_req = ""; color c_fr_req_clr = C'0,230,118';
    if(fr_all_ok) {
@@ -2413,7 +2418,7 @@ void DesenharPainel() {
       else if(d_mpos) s_fr_req = "Requisitos: ✖ Limite Vagas Cheio";
       else if(!c_c2)  s_fr_req = "Requisitos: ✖ Cooldown L1 Ativo";
       else if(!c_l2)  s_fr_req = "Requisitos: ✖ Aguardando Mapeamento";
-      else if(InpFR_BlockAgainstSuperTrend && g_H4_ADX >= InpFR_SuperTrend_ADX && ((perto_topo_main && ask_curr_main > g_MG_EMA200 && g_MG_EMA200 > 0) || (!perto_topo_main && bid_curr_main < g_MG_EMA200 && g_MG_EMA200 > 0)))
+      else if(super_bloq_main)
          s_fr_req = StringFormat("Requisitos: ✖ Super-Tendência (%s)", perto_topo_main ? "Alta ADX>30" : "Baixa ADX>30");
       else if(!confl_mg_main_ok) s_fr_req = StringFormat("Requisitos: ✖ MktGlance Bloq. (%s)", perto_topo_main ? "Exige Venda" : "Exige Compra");
       else if(!dir_lado_main_ok) s_fr_req = StringFormat("Requisitos: ✖ Direção %s Bloq.", perto_topo_main ? "Venda" : "Compra");
