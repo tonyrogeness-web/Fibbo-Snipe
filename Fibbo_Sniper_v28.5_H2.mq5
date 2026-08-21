@@ -1891,7 +1891,7 @@ void DrawVisualText(string name, datetime t, double price, string text, color cl
 void DrawVisualLine(string name, double price, color clr_muted, color clr_active, string sym, string tip, bool show=true, bool highlight=false) {
    string oh = "SniperLine_"+name, ot = "SniperText_"+name;
    if(price <= 0 || !show || g_LinhasModo == 2) { ObjectDelete(0,oh); ObjectDelete(0,ot); return; }
-   datetime ta = iTime(_Symbol,g_TF_L1,0) + (datetime)(PeriodSeconds(g_TF_L1)*5);
+   datetime ta = iTime(_Symbol, _Period, 0) + (datetime)(PeriodSeconds(_Period)*3);
    
    // Tonalidades proporcionais: clr_active quando armada/acesa, clr_muted quando pontilhada/espera
    color line_clr = highlight ? clr_active : clr_muted;
@@ -1901,10 +1901,22 @@ void DrawVisualLine(string name, double price, color clr_muted, color clr_active
    if(ObjectFind(0,oh) < 0) { ObjectCreate(0,oh,OBJ_HLINE,0,0,price); ObjectSetInteger(0,oh,OBJPROP_BACK,true); ObjectSetInteger(0,oh,OBJPROP_SELECTABLE,false); ObjectSetInteger(0,oh,OBJPROP_HIDDEN,true); }
    ObjectSetDouble(0,oh,OBJPROP_PRICE,price); ObjectSetInteger(0,oh,OBJPROP_COLOR,line_clr); ObjectSetInteger(0,oh,OBJPROP_STYLE,line_style); ObjectSetInteger(0,oh,OBJPROP_WIDTH,width); ObjectSetString(0,oh,OBJPROP_TOOLTIP,tip);
    
-   if(ObjectFind(0,ot) < 0) { ObjectCreate(0,ot,OBJ_TEXT,0,ta,price); ObjectSetString(0,ot,OBJPROP_FONT,"Arial"); ObjectSetInteger(0,ot,OBJPROP_BACK,false); ObjectSetInteger(0,ot,OBJPROP_SELECTABLE,false); ObjectSetInteger(0,ot,OBJPROP_HIDDEN,true); }
-   ObjectSetInteger(0,ot,OBJPROP_FONTSIZE,11);
-   ObjectSetString(0,ot,OBJPROP_FONT,"Arial");
-   ObjectSetDouble(0,ot,OBJPROP_PRICE,price); ObjectSetInteger(0,ot,OBJPROP_TIME,ta); ObjectSetInteger(0,ot,OBJPROP_COLOR,line_clr); ObjectSetString(0,ot,OBJPROP_TEXT,sym);
+   if(ObjectFind(0,ot) < 0) { 
+      ObjectCreate(0,ot,OBJ_TEXT,0,ta,price); 
+      ObjectSetString(0,ot,OBJPROP_FONT,"Arial Bold"); 
+      ObjectSetInteger(0,ot,OBJPROP_FONTSIZE,9); 
+      ObjectSetInteger(0,ot,OBJPROP_ANCHOR,ANCHOR_LEFT_LOWER);
+      ObjectSetInteger(0,ot,OBJPROP_BACK,false); 
+      ObjectSetInteger(0,ot,OBJPROP_SELECTABLE,false); 
+      ObjectSetInteger(0,ot,OBJPROP_HIDDEN,true); 
+   }
+   ObjectSetInteger(0,ot,OBJPROP_FONTSIZE,9);
+   ObjectSetString(0,ot,OBJPROP_FONT,"Arial Bold");
+   ObjectSetInteger(0,ot,OBJPROP_ANCHOR,ANCHOR_LEFT_LOWER);
+   ObjectSetDouble(0,ot,OBJPROP_PRICE,price); 
+   ObjectSetInteger(0,ot,OBJPROP_TIME,ta); 
+   ObjectSetInteger(0,ot,OBJPROP_COLOR,line_clr); 
+   ObjectSetString(0,ot,OBJPROP_TEXT,sym);
 }
 
 //===================================================================
@@ -3744,18 +3756,7 @@ void OnTimer() {
    RefreshBarCache(); RefreshFastCache();
    DesenharWidgetStatusMercado();
    
-   // [SINCRONIA DINÂMICA]: Atualiza as linhas sempre que confluência, requisitos, prontidão ou preços mudarem
-   static string s_chart_hash = "";
-   string new_chart_hash = StringFormat("%.5f|%.5f|%.5f|%.5f|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d",
-      g_CachedCanalHigh, g_CachedCanalLow, g_CachedFRTop, g_CachedFRFundo,
-      g_FastNPosSymbol, (int)g_ViewZonas, (int)g_ViewFR, (int)g_ViewFibo,
-      (int)g_LinhasModo, (int)g_MG_BuyAllowed, (int)g_MG_SellAllowed,
-      (int)g_ReadyFR_Sell, (int)g_ReadyFR_Buy, (int)g_ReadyFibo,
-      (int)f_h4_buy, (int)f_h4_sell);
-   if(new_chart_hash != s_chart_hash) {
-      s_chart_hash = new_chart_hash;
-      DesenharLinhasChart();
-   }
+   DesenharLinhasChart();
    
    bool is_tester_non_visual = (MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_VISUAL_MODE));
    if(!is_tester_non_visual) {
