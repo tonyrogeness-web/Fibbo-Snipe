@@ -2004,9 +2004,22 @@ void DesenharLinhasChart() {
    if(InpUseFR && g_CachedFRTop > 0) {
       DrawVisualLine("FR_Topo",  g_CachedFRTop,   clr_fr_muted, clr_fr_active, "▼", "[FR " + tf_fr_str + "] Topo",  fr_show_top, fr_top_hl);
       DrawVisualLine("FR_Fundo", g_CachedFRFundo, clr_fr_muted, clr_fr_active, "▲", "[FR " + tf_fr_str + "] Fundo", fr_show_bot, fr_bot_hl);
+
+      // [GATILHO LASER DINÂMICO]: Linha pontilhada verde neon indicando o ponto de disparo do ATR quando armado
+      double fr_trig_offset = (g_CachedATR > 0) ? (g_CachedATR * 0.15) : (_Point * 20.0);
+      double trig_sell_p = g_CachedFRTop - fr_trig_offset;
+      double trig_buy_p  = g_CachedFRFundo + fr_trig_offset;
+      
+      bool show_trig_sell = (fr_top_hl && !is_zen && draw_lines && g_FastNPosSymbol == 0);
+      bool show_trig_buy  = (fr_bot_hl && !is_zen && draw_lines && g_FastNPosSymbol == 0);
+
+      DrawVisualLine("FR_Gat_V", trig_sell_p, C'0,230,118', C'0,255,128', "⚡", "⚡ GATILHO VENDA", show_trig_sell, false);
+      DrawVisualLine("FR_Gat_C", trig_buy_p,  C'0,230,118', C'0,255,128', "⚡", "⚡ GATILHO COMPRA", show_trig_buy,  false);
    } else {
       DrawVisualLine("FR_Topo",  0, clrNONE, clrNONE, "", "", false, false);
       DrawVisualLine("FR_Fundo", 0, clrNONE, clrNONE, "", "", false, false);
+      DrawVisualLine("FR_Gat_V", 0, clrNONE, clrNONE, "", "", false, false);
+      DrawVisualLine("FR_Gat_C", 0, clrNONE, clrNONE, "", "", false, false);
    }
 
    // --- FIBO (Estrutura Pura Ponto A -> B -> C: Níveis 18%, 28%, 38.2%) ---
@@ -2563,10 +2576,15 @@ void DesenharPainel() {
          string tp2_txt = DoubleToString(tp2_price,_Digits)+" (+"+DoubleToString(tp2_p_pct,1)+"%)";
          PLabel("bta_tp1", px+pad+4, cur, "TP1 (1.0x): "+tp1_txt, CLR_TEAL, InpPanelFontSize);
          PLabelR("bta_tp2", rx-10, cur, "TP2 ("+DoubleToString(eff_tp2_m,1)+"x): "+tp2_txt, CLR_TEAL, InpPanelFontSize); cur+=16;
+
+         ObjectDelete(0, PANEL_PREFIX+"bta_det_l"); ObjectDelete(0, PANEL_PREFIX+"R_bta_det_r");
+         ObjectDelete(0, PANEL_PREFIX+"bta_sub"); ObjectDelete(0, PANEL_PREFIX+"R_bta_sub");
       } else {
          ObjectDelete(0,PANEL_PREFIX+"bg_bata");ObjectDelete(0,PANEL_PREFIX+"bta_n");ObjectDelete(0,PANEL_PREFIX+"R_bta_pnl");
          ObjectDelete(0,PANEL_PREFIX+"bta_ent");ObjectDelete(0,PANEL_PREFIX+"R_bta_sl");
          ObjectDelete(0,PANEL_PREFIX+"bta_tp1");ObjectDelete(0,PANEL_PREFIX+"R_bta_tp2");
+         ObjectDelete(0,PANEL_PREFIX+"bta_det_l");ObjectDelete(0,PANEL_PREFIX+"R_bta_det_r");
+         ObjectDelete(0,PANEL_PREFIX+"bta_sub");ObjectDelete(0,PANEL_PREFIX+"R_bta_sub");
       }
    } else {
       PSectionBadge("s_bata",px,cur,pw,"POSIÇÃO",CLR_TXT_DIM);
@@ -2576,21 +2594,24 @@ void DesenharPainel() {
       PLabel("s_bata_be", be_bx+4, cur+2, be_std_txt, CLR_TXT_DIM, InpPanelFontSize-1, true);
       ObjectDelete(0, PANEL_PREFIX+"btn_col_pos"); cur+=16;
 
-      ObjectDelete(0, PANEL_PREFIX+"bta_det_l"); ObjectDelete(0, PANEL_PREFIX+"R_bta_det_r");
+      ObjectDelete(0, PANEL_PREFIX+"bta_ent"); ObjectDelete(0, PANEL_PREFIX+"R_bta_sl");
+      ObjectDelete(0, PANEL_PREFIX+"bta_tp1"); ObjectDelete(0, PANEL_PREFIX+"R_bta_tp2");
 
+      double eff_rsk = (g_PropMaxRiskPct > 0 ? g_PropMaxRiskPct : InpBaseRisk_L1);
       double eff_tp2_m = (g_TP_Final_Multi > 0) ? g_TP_Final_Multi : InpTP_Final_Multi;
 
       // Linha 1: Status e B.E. Armado
       PLabel("bta_n", px+pad+4, cur, "Status: Aguardando setup Sniper (H2)", CLR_TXT_WHITE, InpPanelFontSize, false);
       PLabelR("bta_pnl", rx-10, cur, "🛡 B.E. Armado", CLR_TEAL, InpPanelFontSize, true); cur+=15;
       
-      // Linha 2: Entrada e SL Fixos
-      PLabel("bta_ent", px+pad+4, cur, "Entrada: ———", CLR_TXT_LABEL, InpPanelFontSize);
-      PLabelR("bta_sl", rx-10, cur, "SL: ———", CLR_TXT_LABEL, InpPanelFontSize); cur+=15;
+      // Linha 2: Informações de Break-Even e Risco
+      string be_info = StringFormat("Gatilho B.E.: 50%% do SL  •  Respiro ATR: %.0f%%", InpBE_BreathingATRPct);
+      PLabel("bta_det_l", px+pad+4, cur, be_info, CLR_TXT_PRIMARY, InpPanelFontSize);
+      PLabelR("bta_det_r", rx-10, cur, "Risco: "+DoubleToString(eff_rsk,1)+"%", CLR_RED, InpPanelFontSize); cur+=15;
 
-      // Linha 3: TP1 e TP2 Fixos
-      PLabel("bta_tp1", px+pad+4, cur, "TP1 (1.0x): ———", CLR_TXT_LABEL, InpPanelFontSize);
-      PLabelR("bta_tp2", rx-10, cur, "TP2 ("+DoubleToString(eff_tp2_m,1)+"x): ———", CLR_TXT_LABEL, InpPanelFontSize); cur+=16;
+      // Linha 3: Estrutura dos Alvos
+      PLabel("bta_sub", px+pad+4, cur, "Alvos: TP1 (1.0x Parcial) ➔ TP2 ("+DoubleToString(eff_tp2_m,1)+"x Final)", CLR_TXT_LABEL, InpPanelFontSize-1);
+      ObjectDelete(0, PANEL_PREFIX+"R_bta_sub"); cur+=16;
    }
 
    // [PROP] Seção Prop Firm no painel (só visível quando InpPropFirmMode = true)
