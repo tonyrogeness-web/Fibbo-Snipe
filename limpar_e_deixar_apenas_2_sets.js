@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('=== LIMPANDO PASTAS E DEIXANDO APENAS OS 2 .SETS PRINCIPAIS ===\n');
+console.log('=== ATUALIZANDO ARQUIVOS .SET COM FLUXO OTIMIZADO (RISCO 1.5% E TP2 3.5x) ===\n');
 
 // 1. Template base
 function buildSetLines(overrides = {}) {
@@ -142,7 +142,7 @@ function buildSetLines(overrides = {}) {
   return '\ufeff' + lines.join('\r\n') + '\r\n';
 }
 
-// 2. Os ÚNICOS 2 Sets que devem existir
+// 2. Os ÚNICOS 2 Sets
 const keepSets = {
   "Fibbo_Sniper_v28.5_H2_Apenas_FR.set": buildSetLines({
     "InpUseFR": "true",
@@ -161,14 +161,14 @@ const keepSets = {
     "InpFluxo_IgnoreWallStrong": "false",
     "InpUseVolumeFilter": "true",
     "InpFluxo_UseExhaustion": "true",
-    "InpBaseRisk_L1": "0.5",
-    "InpPropMaxRiskPct": "0.5",
+    "InpBaseRisk_L1": "1.5",
+    "InpPropMaxRiskPct": "1.5",
     "InpTP_Parcial_Multi": "1.0",
-    "InpTP_Final_Multi": "2.5"
+    "InpTP_Final_Multi": "3.5"
   })
 };
 
-// 3. Diretórios para limpar
+// 3. Diretórios
 const targetDirs = [
   __dirname,
   "C:\\Users\\tony\\AppData\\Roaming\\MetaQuotes\\Terminal\\59C07D676775FCCF79E223EC24AB0D86\\MQL5\\Profiles\\Tester",
@@ -187,13 +187,13 @@ targetDirs.forEach(dir => {
         if (!keepSets[file]) {
           try {
             fs.unlinkSync(path.join(dir, file));
-            console.log(`🗑 Removido antigo: ${file} de ${dir}`);
+            console.log(`🗑 Removido: ${file} de ${dir}`);
           } catch(e) {}
         }
       }
     });
 
-    // Gravar os 2 sets solicitados
+    // Gravar os 2 sets
     for (const [filename, content] of Object.entries(keepSets)) {
       fs.writeFileSync(path.join(dir, filename), content, 'utf16le');
       console.log(`✔ Salvo: ${filename} em ${dir}`);
@@ -201,4 +201,4 @@ targetDirs.forEach(dir => {
   }
 });
 
-console.log('\n=== CONCLUÍDO! APENAS OS 2 ARQUIVOS .SET ESTÃO PRESENTES! ===');
+console.log('\n=== ARQUIVOS .SET ATUALIZADOS COM SUCESSO! ===');
