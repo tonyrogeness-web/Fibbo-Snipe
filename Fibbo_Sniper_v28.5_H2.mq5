@@ -2464,7 +2464,7 @@ void DesenharPainel() {
       string tf_fr_card = StringSubstr(EnumToString(g_TF_L1), 7);
       PModuleCardH("fr_card",ox,cur,cw_fr,ch,c_fr_ico,bg_fr);
       PLabel("fr_n1",ox+ico_x,cur+nome_y,show_fibo_card?("F.ROMP ["+tf_fr_card+"]"+m_dir):("FALSO ROMPIMENTO ["+tf_fr_card+"]"+m_dir),txt_fr,InpPanelFontSize,true);
-      PLabel("fr_st",ox+ico_x,cur+st_y,s_fr2,c_fr_st,InpPanelFontSize,true);
+      PLabel("fr_st",ox+ico_x,cur+st_y,s_fr2,c_fr_st,InpPanelFontSize-2,true);
       PLabel("fr_req",ox+ico_x,cur+req_y,show_fibo_card?(fr_all_ok?"Req: ✔ OK":"Req: ✖ BLOQ"):s_fr_req,is_ready_fr?c_fr_req_clr:CLR_TXT_DIM,InpPanelFontSize-2,true);
       string sr_fr=StringFormat(show_fibo_card?"%dW/%dT":"Assertividade: %dW / %dT",g_FrWins,g_FrTotal);
       if(g_FrTotal>0)sr_fr+=" ("+IntegerToString((int)((g_FrWins*100.0)/g_FrTotal))+"%)";
@@ -2519,7 +2519,7 @@ void DesenharPainel() {
       
       PModuleCardH("fb_card",ox,cur,cw2,ch,c_fb_ico,bg_fb);
       PLabel("fb_n1",ox+ico_x,cur+nome_y,"FIBO [H4]"+m_dir,txt_fb,InpPanelFontSize,true);
-      PLabel("fb_st",ox+ico_x,cur+st_y,s_fb,c_fb_st,InpPanelFontSize,true);
+      PLabel("fb_st",ox+ico_x,cur+st_y,s_fb,c_fb_st,InpPanelFontSize-2,true);
       string sr_fb=StringFormat("%dW/%dT",g_FiboWins,g_FiboTotal);
       if(g_FiboTotal>0)sr_fb+=" ("+IntegerToString((int)((g_FiboWins*100.0)/g_FiboTotal))+"%)";
       PLabel("fb_wr",ox+ico_x,cur+wr_y,sr_fb,(is_ready_fb && g_FiboWins>=g_FiboTotal/2.0&&g_FiboTotal>0)?CLR_TEAL:CLR_TXT_LABEL,InpPanelFontSize-2);
@@ -2628,7 +2628,7 @@ void DesenharPainel() {
       string be_std_txt = " STANDBY ";
       int be_bx = px + pad + 75, be_bw = (int)StringLen(be_std_txt)*6 + 8;
       PRect("s_bata_be_bg", be_bx, cur+1, be_bw, 15, CLR_BG_CARD, CLR_LINE_SOFT, 215);
-      PLabel("s_bata_be", be_bx+4, cur+2, be_std_txt, CLR_TXT_DIM, InpPanelFontSize-1, true);
+      PLabel("s_bata_be", be_bx+4, cur+2, be_std_txt, CLR_TXT_DIM, InpPanelFontSize-3, true);
       ObjectDelete(0, PANEL_PREFIX+"btn_col_pos"); cur+=16;
 
       ObjectDelete(0, PANEL_PREFIX+"bta_ent"); ObjectDelete(0, PANEL_PREFIX+"R_bta_sl");
@@ -2638,16 +2638,16 @@ void DesenharPainel() {
       double eff_tp2_m = (g_TP_Final_Multi > 0) ? g_TP_Final_Multi : InpTP_Final_Multi;
 
       // Linha 1: Status e B.E. Armado
-      PLabel("bta_n", px+pad+4, cur, "Status: Aguardando setup Sniper (H2)", CLR_TXT_WHITE, InpPanelFontSize, false);
-      PLabelR("bta_pnl", rx-10, cur, "🛡 B.E. Armado", CLR_TEAL, InpPanelFontSize, true); cur+=15;
+      PLabel("bta_n", px+pad+4, cur, "Status: Aguardando setup Sniper (H2)", CLR_TXT_WHITE, InpPanelFontSize-2, false);
+      PLabelR("bta_pnl", rx-10, cur, "🛡 B.E. Armado", CLR_TEAL, InpPanelFontSize-2, true); cur+=15;
       
       // Linha 2: Informações de Break-Even e Risco
       string be_info = StringFormat("Gatilho B.E.: 50%% do SL  •  Respiro ATR: %.0f%%", InpBE_BreathingATRPct);
-      PLabel("bta_det_l", px+pad+4, cur, be_info, CLR_TXT_PRIMARY, InpPanelFontSize);
-      PLabelR("bta_det_r", rx-10, cur, "Risco: "+DoubleToString(eff_rsk,1)+"%", CLR_RED, InpPanelFontSize); cur+=15;
+      PLabel("bta_det_l", px+pad+4, cur, be_info, CLR_TXT_PRIMARY, InpPanelFontSize-2);
+      PLabelR("bta_det_r", rx-10, cur, "Risco: "+DoubleToString(eff_rsk,1)+"%", CLR_RED, InpPanelFontSize-2); cur+=15;
 
       // Linha 3: Estrutura dos Alvos
-      PLabel("bta_sub", px+pad+4, cur, "Alvos: TP1 (1.0x Parcial) ➔ TP2 ("+DoubleToString(eff_tp2_m,1)+"x Final)", CLR_TXT_LABEL, InpPanelFontSize-1);
+      PLabel("bta_sub", px+pad+4, cur, "Alvos: TP1 (1.0x Parcial) ➔ TP2 ("+DoubleToString(eff_tp2_m,1)+"x Final)", CLR_TXT_LABEL, InpPanelFontSize-2);
       ObjectDelete(0, PANEL_PREFIX+"R_bta_sub"); cur+=16;
    }
 
