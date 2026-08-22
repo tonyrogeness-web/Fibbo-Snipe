@@ -578,8 +578,8 @@ input double InpMinViableATR_Multi = 1.0;
 
 input group "=== ROTEAMENTO INTELIGENTE POR ATIVO ==="
 input bool   InpSmartRouting         = true; // [ROTEAMENTO AUTOMÁTICO] Ativa estratégia campeã por moeda
-input string InpFR_BlockedSymbols    = "GBPJPY,GBPUSD,XAUUSD,GOLD"; // Pares bloqueados para FR (Tendência/Ouro) // Pares bloqueados para FR (Pares de Tendência/Libra)
-input string InpFluxo_BlockedSymbols = "EURUSD,EURJPY,EURCAD,NZDUSD,EURAUD,AUDNZD"; // Pares bloqueados para Fluxo (Pares de Canal)
+input string InpFR_BlockedSymbols    = "GBPJPY,GBPUSD,XAUUSD,GOLD,EURJPY"; // Pares bloqueados para FR (Tendência/Ouro/Iene) // Pares bloqueados para FR (Tendência/Ouro) // Pares bloqueados para FR (Pares de Tendência/Libra)
+input string InpFluxo_BlockedSymbols = "EURUSD,EURCAD,NZDUSD,EURAUD,AUDNZD"; // Pares bloqueados para Fluxo (Pares de Canal/Range) // Pares bloqueados para Fluxo (Pares de Canal)
 
 input group "=== TENDÊNCIA E FLUXO ==="
 input bool InpAutoTF = true;             // Seleção Automática de TF por Moeda (Opção C Mestre)
