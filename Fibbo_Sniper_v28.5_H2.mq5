@@ -3974,7 +3974,14 @@ void OnTick() {
              if(!g_MG_SellAllowed) ma_sell = false;
          }
 
-         g_FluxoParedeAtiva=(!parede_buy_ok||!parede_sell_ok);
+         g_FluxoParedeAtiva = (!parede_buy_ok || !parede_sell_ok);
+         if(!is_lateral) {
+            g_ReadyFluxo = (canal_high > 0 && ma_buy && rsi_buy_ok && parede_buy_ok && !exaustao_alta) || 
+                           (canal_low > 0 && ma_sell && rsi_sell_ok && parede_sell_ok && !exaustao_baixa);
+         } else {
+            g_FluxoParedeAtiva = false;
+            g_ReadyFluxo = false; // [BLINDAGEM CONSERVADORA] Standby total em mercado lateral (sem ruído)
+         }
          if(!is_lateral) g_ReadyFluxo=(canal_high>0&&ma_buy&&rsi_buy_ok&&parede_buy_ok&&!exaustao_alta)||(canal_low>0&&ma_sell&&rsi_sell_ok&&parede_sell_ok&&!exaustao_baixa);
          else{g_FluxoParedeAtiva=false;g_ReadyFluxo=(canal_high>0&&(InpFluxo_UseExhaustion?g_CachedRSI>=p_FluxoRSI_OB:true))||(canal_low>0&&(InpFluxo_UseExhaustion?g_CachedRSI<=p_FluxoRSI_OS:true));}
          if(!is_lateral){
@@ -3989,12 +3996,6 @@ void OnTick() {
                if(!exaustao_alta&&parede_buy_ok&&canal_high>0&&ask>canal_high&&ask>o_cur&&ma_buy&&vol_ok&&rsi_buy_ok&&cb_l1!=l1_flx_buy&&!JaExistePosicaoDaEstrategia("Fluxo_C_L1")){if(AbrirBuy(lot,ask,sl_pts,fluxo_tp1_buy,eff_tp_multi,"Fluxo_C_L1")){l1_flx_buy=cb_l1;AddLog("Fluxo COMPRA L1 [Prec].");}}
                if(!exaustao_baixa&&parede_sell_ok&&canal_low>0&&bid<canal_low&&bid<o_cur&&ma_sell&&vol_ok&&rsi_sell_ok&&cb_l1!=l1_flx_sell&&!JaExistePosicaoDaEstrategia("Fluxo_V_L1")){if(AbrirSell(lot,bid,sl_pts,fluxo_tp1_sell,eff_tp_multi,"Fluxo_V_L1")){l1_flx_sell=cb_l1;AddLog("Fluxo VENDA L1 [Prec].");}}
             }
-         } else {
-            bool rev_venda_ok=InpFluxo_UseExhaustion?(g_CachedRSI>=p_FluxoRSI_OB):true, rev_compra_ok=InpFluxo_UseExhaustion?(g_CachedRSI<=p_FluxoRSI_OS):true;
-            double eff_tp_multi = (g_TP_Final_Multi > 0) ? g_TP_Final_Multi : InpTP_Final_Multi;
-            // [BUG-03 FIX] Verificar comment correto "Fluxo_V_L1"/"Fluxo_C_L1" — antes verificava "Fluxo_Rev_Venda"/"Fluxo_Rev_Compra" que nunca existiam, tornando o filtro antiduplicação inativo no modo lateral
-            if(canal_high>0&&iHigh(_Symbol,g_TF_L1,1)>canal_high&&iClose(_Symbol,g_TF_L1,1)<canal_high&&ValidarEstruturaVelas(-1,g_TF_L1)&&cb_l1!=l1_flx_sell&&vol_ok&&rev_venda_ok&&!JaExistePosicaoDaEstrategia("Fluxo_V_L1")){if(AbrirSell(lot,bid,sl_pts,InpTP_Parcial_Multi,eff_tp_multi,"Fluxo_V_L1")) {l1_flx_sell=cb_l1; AddLog("Fluxo Rev VENDA.");}}
-            if(canal_low>0&&iLow(_Symbol,g_TF_L1,1)<canal_low&&iClose(_Symbol,g_TF_L1,1)>canal_low&&ValidarEstruturaVelas(1,g_TF_L1)&&cb_l1!=l1_flx_buy&&vol_ok&&rev_compra_ok&&!JaExistePosicaoDaEstrategia("Fluxo_C_L1")){if(AbrirBuy(lot,ask,sl_pts,InpTP_Parcial_Multi,eff_tp_multi,"Fluxo_C_L1")) {l1_flx_buy=cb_l1; AddLog("Fluxo Rev COMPRA.");}}
          }
       } else g_ReadyFluxo=false;
    } else g_ReadyFluxo=false;
